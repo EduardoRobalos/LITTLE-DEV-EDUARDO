@@ -34,15 +34,82 @@
             </header>
 
             <div class="content-area">
+
+                <div class="filters-bar">
+                    <form id="searchForm" class="search-form-container">
+                        <input type="text" id="searchInput" placeholder="Pesquisar por número da sala, andar ou período..." class="search-input">
+                        <button type="submit" class="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+            
+                </div>
+
+            <section class="rooms-section available-rooms">
+                </section>
+            
+            <section class="rooms-section reserved-rooms">
+                </section>
+            
+            <hr class="section-divider"> <section class="reservations-summary">
+                <h2>Próximas Reservas</h2>
+                <div class="reservations-grid">
+                    <div class="reservation-card">
+                        <i class="fas fa-calendar-alt icon-left"></i>
+                        <div class="info">
+                            <div class="card-header-reserva">SALA 304 - Design Thinking</div>
+                            <p>Início: 08/03 14:00 | Término: 08/03 17:00</p>
+                            <p>Solicitante: João Silva</p>
+                        </div>
+                        <span class="status reserved">RESERVADA</span>
+                    </div>
+                    
+                    <div class="reservation-card">
+                        <i class="fas fa-calendar-alt icon-left"></i>
+                        <div class="info">
+                            <div class="card-header-reserva">SALA 305 - Reunião de Equipe</div>
+                            <p>Início: 09/03 09:00 | Término: 09/03 12:00</p>
+                            <p>Solicitante: Maria Souza</p>
+                        </div>
+                        <span class="status available">DISPONÍVEL</span>
+                    </div>
+                </div>
+            </section>
+            
+            <hr class="section-divider"> <section class="reports-summary">
+                <h2>Relatórios Recentes</h2>
+                <div class="reports-list">
+                    <div class="report-item">
+                        <div class="report-header">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Relatório de Ocupação - Mês de Fevereiro</span>
+                        </div>
+                        <p class="report-dates">Período: 01/02/2024 - 29/02/2024</p>
+                        <p class="report-desc">Descrição: Análise de pico de reservas no turno da tarde, identificando necessidade de mais salas no 2º andar.</p>
+                    </div>
+                    
+                    <div class="report-item">
+                        <div class="report-header">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Relatório de Materiais Faltantes - Sala 307</span>
+                        </div>
+                        <p class="report-dates">Data: 07/03/2024</p>
+                        <p class="report-desc">Descrição: Controle remoto e cabos HDMI ausentes após a última reserva. Ações corretivas em andamento.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+</body>
+</html>
                 
                 <div class="filters-bar">
                     <div class="filter-item">
                         <i class="fas fa-search"></i>
                         Controle não encontrado nos materiais de sala 307
-                    </div>
-                    <div class="filter-item product-design">
-                        <i class="fas fa-search"></i>
-                        Product Design
                     </div>
                     <div class="search-icon-container">
                         <i class="fas fa-search"></i>

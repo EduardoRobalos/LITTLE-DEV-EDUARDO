@@ -83,8 +83,86 @@ app.get('/arquivo/:id', async (req, res) => {
         res.send(dadosBinarios);
 
     } catch (erro) {
+        // ...
+    }
+});
+
+app.get('/arquivo/:id', async (req, res) => {
+    const idArquivo = req.params.id;
+
+    try {
+        const query = 'SELECT nome, tipo_mime, dados FROM arquivos WHERE id = ?';
+        const linhas = await executePromisified(query, [idArquivo]);
+
+        if (linhas.length === 0) {
+            return res.status(404).send('Arquivo não encontrado.');
+        }
+
+        const arquivo = linhas[0];
+        const dadosBinarios = arquivo.dados;
+
+        res.setHeader('Content-Type', arquivo.tipo_mime);
+        res.setHeader('Content-Disposition', `attachment; filename="${arquivo.nome}"`);
+        
+        res.send(dadosBinarios);
+
+    } catch (erro) {
         console.error('Erro ao recuperar o arquivo:', erro);
         res.status(500).send('Erro interno ao recuperar o arquivo.');
+    }
+});
+
+app.get('/rooms', async (req, res) => {
+    try {
+        // Esta consulta busca todos os detalhes das salas e, se houver, a última reserva.
+        // Em um sistema real, a lógica de 'Reservada' vs 'Disponível' precisaria checar 
+        // se dataTermino > NOW(). Para simplificar, estamos pegando a última reserva para demonstração.
+        const query = `
+            SELECT 
+                s.salasID, s.numero, s.andar, s.capacidade, s.bloco,
+                r.reservaID, r.statusReserva, r.periodo, r.dataInicio, r.dataTermino
+            FROM salas s
+            LEFT JOIN reserva r ON s.salasID = r.salasID
+            ORDER BY s.numero, r.dataInicio DESC;
+        `;
+        
+        const roomsData = await executePromisified(query);
+
+        // Processa o resultado para estruturar os dados e determinar o status atual de cada sala
+        const roomsMap = {};
+
+        roomsData.forEach(row => {
+            const salaId = row.salasID;
+            if (!roomsMap[salaId]) {
+                roomsMap[salaId] = {
+                    id: row.salasID,
+                    numero: row.numero,
+                    andar: row.andar,
+                    capacidade: row.capacidade,
+                    bloco: row.bloco,
+                    status: 'Disponível', // Status padrão
+                    reservation: null 
+                };
+            }
+            
+            // Assume que a última reserva 'Reservada' encontrada é a atual
+            if (row.reservaID && row.statusReserva === 'Reservada' && !roomsMap[salaId].reservation) {
+                roomsMap[salaId].status = 'Reservada';
+                roomsMap[salaId].reservation = {
+                    id: row.reservaID,
+                    periodo: row.periodo,
+                    dataInicio: row.dataInicio,
+                    dataTermino: row.dataTermino
+                };
+            }
+        });
+        
+        const rooms = Object.values(roomsMap);
+        
+        res.json({ success: true, rooms });
+    } catch (erro) {
+        console.error('Erro ao buscar salas:', erro);
+        res.status(500).json({ success: false, message: 'Erro interno ao buscar salas.' });
     }
 });
 
