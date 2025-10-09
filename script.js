@@ -9,6 +9,21 @@ function formatarData(dataString) {
     return new Date(dataString).toLocaleDateString('pt-BR', options);
 }
 
+async function listarSalasDeCadastro() {
+    try {
+        const response = await fetch('/api/cadastro-salas');
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            console.log('Salas de cadastro :', data.salas);
+        } else {
+            console.error('Erro ao carregar cadastro de salas:', data.message);
+        }
+    } catch (error) {
+        console.error('Erro de conexão ao carregar cadastro de salas:', error);
+    }
+}
+
 formUpload.addEventListener('submit', async function(event) {
     event.preventDefault();
 
@@ -81,4 +96,104 @@ async function listarArquivos() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', listarArquivos);
+// ... (mantenha todo o código existente, incluindo setupDownloadButtons) ...
+
+// Função para filtrar os cards de salas (Disponíveis e Reservadas)
+function filterRooms(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    // Seleciona todos os cards de salas (Disponíveis e Reservadas)
+    const roomCards = document.querySelectorAll('.rooms-section .room-card');
+
+    roomCards.forEach(card => {
+        // Pega todo o texto do card (título e parágrafos)
+        const cardText = card.textContent.toLowerCase();
+        
+        if (cardText.includes(term) || term === '') {
+            card.style.display = 'block'; // Mostra o card
+        } else {
+            card.style.display = 'none'; // Oculta o card
+        }
+    });
+}
+
+// Event Listeners para a nova barra de pesquisa
+function setupDownloadButtons() {
+    // ... (coloque o código da sua função setupDownloadButtons aqui se ela existir)
+    // Se não existir, a chamada em loadRooms() dará erro. Por enquanto, vamos deixá-la vazia.
+}
+
+// ... (Mantenha as funções createRoomCard, filterRooms, etc., que já existem) ...
+
+async function loadRooms() {
+    const availableGrid = document.getElementById('availableRoomsGrid');
+    const reservedList = document.getElementById('reservedRoomsList');
+    
+    // Verificação para garantir que os elementos existem na página atual
+    if (!availableGrid || !reservedList) {
+        console.log("Elementos de salas não encontrados nesta página. Ignorando o carregamento de salas.");
+        return;
+    }
+
+    const navigationButtons = availableGrid.querySelector('.room-navigation');
+    availableGrid.innerHTML = ''; // Limpa, mas mantém a referência dos botões
+    if(navigationButtons) availableGrid.appendChild(navigationButtons);
+    reservedList.innerHTML = ''; 
+
+    try {
+        const response = await fetch('/rooms');
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            console.log('DADOS RECEBIDOS PELO FRONT-END:', data.rooms.length, 'salas.');
+
+            if (data.rooms.length === 0) {
+                availableGrid.insertAdjacentHTML('afterbegin', '<p>Nenhuma sala disponível encontrada.</p>');
+            }
+
+            data.rooms.forEach(room => {
+                const card = createRoomCard(room); // Sua função createRoomCard
+                if (room.status === 'Reservada') {
+                    reservedList.appendChild(card);
+                } else {
+                    if(navigationButtons) availableGrid.insertBefore(card, navigationButtons);
+                    else availableGrid.appendChild(card);
+                }
+            });
+            
+            // setupDownloadButtons(); // Ativa os botões de download nos novos cards
+        } else {
+             console.error('Erro de API no Front-end:', data.message);
+             availableGrid.innerHTML = `<p class="error">Erro ao carregar salas: ${data.message}</p>`;
+        }
+    } catch (error) {
+        console.error('Erro crítico no fetch de salas:', error);
+        availableGrid.innerHTML = `<p class="error">Não foi possível conectar ao servidor para buscar as salas.</p>`;
+    }
+}
+
+
+// VERSÃO CORRIGIDA E UNIFICADA
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Carrega as salas do banco de dados na página principal
+    loadRooms(); 
+
+    // 2. Carrega a lista de arquivos de cadastro (se estiver na página correta)
+    listarSalasDeCadastro();
+    listarArquivos(); // Se a tabela de arquivos também estiver na mesma página
+
+    // 3. Configura a lógica de pesquisa
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+
+    if (searchForm && searchInput) {
+        searchForm.addEventListener('submit', function(event) {
+            event.preventDefault(); 
+            filterRooms(searchInput.value);
+        });
+
+        searchInput.addEventListener('keyup', function() {
+            filterRooms(this.value);
+        });
+    }
+});

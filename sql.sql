@@ -7,3 +7,5 @@ CREATE TABLE IF NOT EXISTS `reservaSalas`.`arquivos` (
   `dados` LONGBLOB NOT NULL,
   `data_upload` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`))
+
+  
