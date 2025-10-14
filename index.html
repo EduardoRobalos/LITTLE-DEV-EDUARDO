@@ -11,10 +11,12 @@
         <aside class="sidebar">
             <nav>
                 <a href="#" class="nav-item active">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                    <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
                 </a>
                 <a href="#" class="nav-item">
-                    <i class="fas fa-cog"></i> Configurações
+                    <a href="/configuracoes" onclick="navigateTo('/configuracoes'); return false;">
+                        <i class="fas fa-cog"></i><span>Configurações</span>
+                      </a>
                 </a>
             </nav>
         </aside>
@@ -34,15 +36,91 @@
             </header>
 
             <div class="content-area">
+                 
+                <div class="filters-bar">
+                    <form id="searchForm" class="search-form-container">
+                        <input type="text" id="searchInput" placeholder="Pesquisar por número da sala, andar ou período..." class="search-input">
+                        <button type="submit" class="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+            
+                </div>
+            
+            <hr class="section-divider"> <section class="reservations-summary">
+                <h2>Próximas Reservas</h2>
+                <div class="reservations-grid">
+                    <div class="reservation-card">
+                        <i class="fas fa-calendar-alt icon-left"></i>
+                        <div class="info">
+                            <section class="rooms-section cadastro-salas-list">
+                                <h2>Cadastro de Salas</h2>
+                                <table id="tabelaCadastroSalas" class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Número</th>
+                                            <th>Andar</th>
+                                            <th>Bloco</th>
+                                            <th>Tipo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        </tbody>
+                                </table>
+                            </section>
+                            <div class="card-header-reserva"></div>
+                            <p></p>
+                            <p></p>
+                        </div>
+                        <span class="status reserved"></span>
+                    </div>
+                    
+                    <div class="reservation-card">
+                        <i class="fas fa-calendar-alt icon-left"></i>
+                        <div class="info">
+                            <div class="card-header-reserva"></div>
+                            <p></p>
+                            <p></p>
+                        </div>
+                        <span class="status available"></span>
+                    </div>
+                </div>
+            </section>
+            
+            <hr class="section-divider"> <section class="reports-summary">
+                <h2>Relatórios Recentes</h2>
+                <div class="reports-list">
+                    <div class="report-item">
+                        <div class="report-header">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Relatório de Ocupação - Mês de Fevereiro</span>
+                        </div>
+                        <p class="report-dates">Período: 01/02/2024 - 29/02/2024</p>
+                        <p class="report-desc">Descrição: Análise de pico de reservas no turno da tarde, identificando necessidade de mais salas no 2º andar.</p>
+                    </div>
+                    
+                    <div class="report-item">
+                        <div class="report-header">
+                            <i class="fas fa-clipboard-list"></i>
+                            <span>Relatório de Materiais Faltantes - Sala 307</span>
+                        </div>
+                        <p class="report-dates">Data: 07/03/2024</p>
+                        <p class="report-desc">Descrição: Controle remoto e cabos HDMI ausentes após a última reserva. Ações corretivas em andamento.</p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</div>
+</body>
+</html>
                 
                 <div class="filters-bar">
                     <div class="filter-item">
                         <i class="fas fa-search"></i>
                         Controle não encontrado nos materiais de sala 307
-                    </div>
-                    <div class="filter-item product-design">
-                        <i class="fas fa-search"></i>
-                        Product Design
                     </div>
                     <div class="search-icon-container">
                         <i class="fas fa-search"></i>
@@ -53,26 +131,26 @@
                     <h2>Salas Disponíveis</h2>
                     <div class="rooms-grid">
                         <div class="room-card">
-                            <div class="card-header">SALA 304</div>
-                            <p>Andar: 2º</p>
-                            <p>Capacidade: 30 Alunos</p>
-                            <p>Período: Manhã E Tarde</p>
+                            <div class="card-header"></div>
+                            <p></p>
+                            <p></p>
+                            <p></p>
                             <button class="download-icon"><i class="fas fa-download"></i></button>
                         </div>
                         
                         <div class="room-card">
-                            <div class="card-header">SALA 305</div>
-                            <p>Andar: 2º</p>
-                            <p>Capacidade: 30 Alunos</p>
-                            <p>Período: Manhã E Tarde</p>
+                            <div class="card-header"></div>
+                            <p></p>
+                            <p></p>
+                            <p></p>
                             <button class="download-icon"><i class="fas fa-download"></i></button>
                         </div>
 
                         <div class="room-card">
-                            <div class="card-header">SALA 306</div>
-                            <p>Andar: 2º</p>
-                            <p>Capacidade: 30 Alunos</p>
-                            <p>Período: Manhã E Tarde</p>
+                            <div class="card-header"></div>
+                            <p></p>
+                            <p></p>
+                            <p></p>
                             <button class="download-icon"><i class="fas fa-download"></i></button>
                         </div>
 
@@ -86,16 +164,16 @@
                 <section class="rooms-section reserved-rooms">
                     <h2>Salas Reservadas</h2>
                     <div class="room-card reserved-card">
-                        <div class="card-header">SALA 307</div>
-                        <p>Andar: 2º</p>
-                        <p>Capacidade: 30 Alunos</p>
+                        <div class="card-header"></div>
+                        <p></p>
+                        <p></p>
                     </div>
 
                     <div class="room-card reserved-card">
-                        <div class="card-header">SALA 310</div>
-                        <p>Andar: 2º</p>
-                        <p>Capacidade: 30 Alunos</p>
-                        <p>Período: Tarde</p>
+                        <div class="card-header"></div>
+                        <p></p>
+                        <p></p>
+                        <p></p>
                     </div>
                 </section>
             </div>

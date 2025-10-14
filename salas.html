@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Salas</title>
+    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <nav>
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog"></i> Configurações
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <nav class="main-nav">
+                    <a href="#" class="nav-link active">Página Inicial</a>
+                    <a href="#" class="nav-link">Salas</a>
+                    <a href="#" class="nav-link">Cadastro</a>
+                </nav>
+                <div class="user-actions">
+                    <button class="icon-button"><i class="fas fa-bell"></i></button>
+                    <button class="icon-button"><i class="fas fa-user-circle"></i></button>
+                    <button class="icon-button"><i class="fas fa-question-circle"></i></button>
+                </div>
+            </header>
+
+            <div class="content-area">
+                
+                <div class="filters-bar">
+                    <form id="searchForm" class="search-form-container">
+                        <input type="text" id="searchInput" placeholder="Pesquisar por número da sala, andar ou período..." class="search-input">
+                        <button type="submit" class="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <section class="rooms-section available-rooms">
+                    <h2>Salas Disponíveis</h2>
+                    <div class="rooms-grid" id="availableRoomsGrid"> 
+                        <div class="room-navigation">
+                            <button class="nav-button"><i class="fas fa-chevron-left"></i></button>
+                            <button class="nav-button"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="rooms-section reserved-rooms">
+                    <h2>Salas Reservadas</h2>
+                    <div id="reservedRoomsList">
+                        </div>
+                </section>
+                
+                <hr class="section-divider">
+
+                <section class="reservations-summary">
+                    <h2>Próximas Reservas</h2>
+                    <div class="reservations-grid">
+                        <div class="reservation-card">
+                            <i class="fas fa-calendar-alt icon-left"></i>
+                            <div class="info">
+                                <div class="card-header-reserva">SALA 304 - Design Thinking</div>
+                                <p>Início: 08/03 14:00 | Término: 08/03 17:00</p>
+                                <p>Solicitante: João Silva</p>
+                            </div>
+                            <span class="status reserved">RESERVADA</span>
+                        </div>
+                        
+                        <div class="reservation-card">
+                            <i class="fas fa-calendar-alt icon-left"></i>
+                            <div class="info">
+                                <div class="card-header-reserva">SALA 305 - Reunião de Equipe</div>
+                                <p>Início: 09/03 09:00 | Término: 09/03 12:00</p>
+                                <p>Solicitante: Maria Souza</p>
+                            </div>
+                            <span class="status available">DISPONÍVEL</span>
+                        </div>
+                    </div>
+                </section>
+                
+                <hr class="section-divider">
+
+                <section class="reports-summary">
+                    <h2>Relatórios Recentes</h2>
+                    <div class="reports-list">
+                        <div class="report-item">
+                            <div class="report-header">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span>Relatório de Ocupação - Mês de Fevereiro</span>
+                            </div>
+                            <p class="report-dates">Período: 01/02/2024 - 29/02/2024</p>
+                            <p class="report-desc">Descrição: Análise de pico de reservas no turno da tarde.</p>
+                        </div>
+                        
+                        <div class="report-item">
+                            <div class="report-header">
+                                <i class="fas fa-clipboard-list"></i>
+                                <span>Relatório de Materiais Faltantes - Sala 307</span>
+                            </div>
+                            <p class="report-dates">Data: 07/03/2024</p>
+                            <p class="report-desc">Descrição: Controle remoto e cabos HDMI ausentes.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
