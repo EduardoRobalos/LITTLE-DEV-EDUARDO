@@ -1,267 +1,565 @@
 :root {
-    --primary-color: #1a237e; /* Azul Escuro */
-    --secondary-color: #3f51b5; /* Azul Médio */
-    --background-color: #f7f8fa; /* Cinza claro do fundo */
-    --text-color: #333;
-    --light-text-color: #777;
-    --border-color: #e0e0e0;
-    --card-bg: #fff;
-    --header-link-active: #ffffff;
-    --sidebar-active-bg: #e3e8f8; /* Fundo leve para item ativo da sidebar */
+  --primary-color: #17307a;    /* azul escuro (top bar) */
+  --secondary-color: #3a86ff;  /* azul vivo usado em destaques */
+  --background-color: #f6f7fb;
+  --card-bg: #ffffff;
+  --text-color: #222;
+  --light-text-color: #6f7785;
+  --border-color: #e6e9f0;
+  --sidebar-active-bg: #e9eefc;
 }
 
+/* Reset */
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
-
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 14px;
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--background-color);
+  color: var(--text-color);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 1. Container Principal do Dashboard */
+/* Layout */
 .dashboard-container {
-    display: flex;
-    min-height: 100vh;
+  display: flex;
+  min-height: 100vh;
 }
 
-/* 2. Barra Lateral (Sidebar) */
+/* Sidebar */
 .sidebar {
-    width: 250px; /* Largura conforme a imagem */
-    background-color: var(--card-bg); /* Fundo branco */
-    padding: 20px 0;
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
+  width: 240px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
-
 .sidebar nav {
-    margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--light-text-color);
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.18s, color 0.18s, transform 0.12s;
+}
+.nav-item i {
+  color: var(--secondary-color);
+  min-width: 20px;
+}
+.nav-item:hover {
+  background: var(--sidebar-active-bg);
+  color: var(--primary-color);
+}
+.nav-item.active {
+  background: #dfe7ff;
+  color: var(--primary-color);
+}
+.sidebar-spacer {
+  flex: 1;
 }
 
-.sidebar .nav-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 20px;
-    text-decoration: none;
-    color: var(--light-text-color);
-    font-weight: 500;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.sidebar .nav-item i {
-    margin-right: 10px;
-    font-size: 16px;
-}
-
-.sidebar .nav-item.active {
-    color: var(--primary-color);
-    background-color: var(--sidebar-active-bg);
-    border-left: 3px solid var(--primary-color); /* Indicador de ativo */
-}
-
-/* 3. Conteúdo Principal */
+/* Main content */
 .main-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-/* 4. Barra Superior (Top Bar) */
+/* Topbar */
 .top-bar {
-    background-color: var(--primary-color);
-    color: #fff;
-    padding: 0 40px;
-    height: 80px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 84px;
+  background: var(--primary-color);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.06);
 }
-
 .main-nav {
-    display: flex;
-    height: 100%;
+  display: flex;
+  gap: 34px;
 }
 
+/* ---- LINKS DO TOPO (hover com linha branca animada) ---- */
 .main-nav .nav-link {
-    text-decoration: none;
-    color: rgba(255, 255, 255, 0.6);
-    padding: 0 25px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 600;
-    border-bottom: 3px solid transparent;
-    transition: border-bottom-color 0.3s, color 0.3s;
+  position: relative;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 20px 0;
+  transition: color 0.25s ease;
 }
-
-.main-nav .nav-link.active {
-    color: var(--header-link-active);
-    border-bottom-color: var(--header-link-active);
+.main-nav .nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background-color: #ffffff;
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+.main-nav .nav-link:hover {
+  color: #ffffff;
+}
+.main-nav .nav-link:hover::after {
+  width: 100%;
+}
+.main-nav .nav-link.active::after {
+  width: 100%;
 }
 
 .user-actions {
-    display: flex;
-    gap: 15px;
+  position: absolute;
+  right: 40px;
+  display: flex;
+  gap: 12px;
 }
-
 .icon-button {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    transition: background-color 0.2s;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+.icon-button:hover {
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
-/* 5. Área de Conteúdo */
+/* Content area */
 .content-area {
-    padding: 20px 40px;
+  padding: 26px 40px;
 }
 
-/* 6. Filtros/Busca */
+/* Search bar */
 .filters-bar {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 40px 0;
+}
+.search-form-container {
+  display: flex;
+  width: 100%;
+  max-width: 760px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(16, 24, 40, 0.05);
+  border: 1px solid #e3e8f3;
+}
+.search-input {
+  flex: 1;
+  padding: 14px 16px;
+  border: none;
+  outline: none;
+  color: var(--text-color);
+}
+.search-button {
+  background: var(--primary-color);
+  border: none;
+  color: #fff;
+  padding: 10px 18px;
+  cursor: pointer;
 }
 
-.filter-item {
-    background-color: var(--card-bg);
-    padding: 10px 15px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    color: var(--light-text-color);
-    font-size: 13px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-}
-
-.filter-item i {
-    margin-right: 8px;
-    color: var(--primary-color);
-}
-
-.filter-item.product-design {
-    /* Estilo para simular o estado ativo/destacado */
-    border: 1px solid var(--primary-color);
-}
-
-.search-icon-container {
-    background-color: var(--card-bg);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    color: var(--light-text-color);
-    cursor: pointer;
-}
-
-
-/* 7. Seções de Salas */
-.rooms-section h2 {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--text-color);
-    margin: 20px 0 10px 0;
-}
-
+/* Cards - rooms */
 .rooms-grid {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start; /* Para que os botões de navegação fiquem alinhados */
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
 }
-
-/* 8. Cartões de Sala */
 .room-card {
-    background-color: var(--card-bg);
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-    width: 250px; /* Largura fixa para os cartões */
-    position: relative;
-    border-left: 5px solid var(--primary-color); /* Simula a cor lateral dos cards disponíveis */
-    margin-bottom: 15px; /* Espaçamento entre os cartões na seção "Reservadas" */
+  background: var(--card-bg);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.06);
+  width: 240px;
+  border-left: 6px solid var(--secondary-color);
+  transition: all 0.2s ease-in-out;
 }
-
+.room-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
 .room-card .card-header {
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--primary-color);
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--border-color);
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--primary-color);
 }
-
 .room-card p {
-    font-size: 13px;
-    color: var(--light-text-color);
-    line-height: 1.6;
+  color: var(--light-text-color);
+  font-size: 13px;
+  margin: 4px 0;
+  line-height: 1.4;
+}
+.room-card p strong {
+  color: #1e2b4d;
+  font-weight: 600;
+}
+.room-card .btn {
+  margin-top: 10px;
 }
 
-.download-icon {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    color: var(--light-text-color);
-    font-size: 16px;
-    cursor: pointer;
-    padding: 5px;
-    transition: color 0.2s;
+/* Reservation cards */
+.reservations-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.reservation-card {
+  background: var(--card-bg);
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.05);
+  display: flex;
+  align-items: center;
+  position: relative;
+  border-left: 6px solid var(--primary-color);
+  width: 460px;
+  transition: all 0.2s ease-in-out;
+}
+.reservation-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+.reservation-card .icon-left {
+  font-size: 22px;
+  color: var(--secondary-color);
+  margin-right: 12px;
+}
+.reservation-card .info {
+  flex: 1;
+}
+.reservation-card .status {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.reservation-card .status.reserved {
+  background: var(--primary-color);
+}
+.reservation-card .status.available {
+  background: var(--secondary-color);
 }
 
-/* Cartões Reservados - Sem a barra lateral azul */
-.room-card.reserved-card {
-    border-left: none;
-    width: 100%; /* Ocupa a largura total da seção conforme a imagem */
+/* Reports list */
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.report-item {
+  background: var(--card-bg);
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.04);
+  border-left: 6px solid var(--primary-color);
+  transition: all 0.2s ease-in-out;
+}
+.report-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+.report-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--text-color);
 }
 
-/* Ajusta o grid para a seção de salas reservadas */
-.reserved-rooms .room-card {
-    width: 600px; /* Simula a largura combinada dos cards disponíveis */
-    padding-right: 40px; /* Espaço para compensar a falta do ícone de download */
+/* Buttons */
+.btn {
+  background: var(--secondary-color);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s, transform 0.15s;
+}
+.btn.small {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.btn.small:hover {
+  background-color: #2e73e0;
+  transform: translateY(-1px);
+}
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
 }
 
-/* Navegação de Salas */
-.room-navigation {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-left: auto; /* Alinha à direita */
-    align-self: flex-end; /* Alinha verticalmente ao final dos cards */
-    padding-bottom: 20px; /* Alinha com a base dos cards */
+/* Section divider */
+.section-divider {
+  height: 1px;
+  background: var(--border-color);
+  border: none;
+  margin: 26px 0;
 }
 
-.nav-button {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--light-text-color);
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 12px;
-    display: flex;
+/* Modal de configurações */
+.config-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 10, 20, 0.5);
+  backdrop-filter: blur(2px);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+.config-box {
+  background: var(--card-bg);
+  width: 680px;
+  max-width: 95%;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(6, 10, 20, 0.3);
+  overflow: hidden;
+  position: relative;
+}
+.close-config {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: var(--light-text-color);
+  cursor: pointer;
+}
+.config-container {
+  display: flex;
+  height: 340px;
+}
+.config-sidebar {
+  width: 190px;
+  padding: 20px;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  align-items: flex-start;
+}
+.config-sidebar ul {
+  list-style: none;
+  width: 100%;
+}
+.config-sidebar li {
+  padding: 12px;
+  color: var(--light-text-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+}
+.config-sidebar li.active,
+.config-sidebar li:hover {
+  background: var(--sidebar-active-bg);
+  color: var(--primary-color);
+}
+.config-divider {
+  width: 1px;
+  background: var(--border-color);
+}
+.config-content {
+  flex: 1;
+  padding: 26px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.config-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 320px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #d0d4dd;
+  border-radius: 24px;
+  transition: 0.25s;
+}
+.slider:before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.25s;
+}
+input:checked + .slider {
+  background: var(--primary-color);
+}
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+/* Títulos e seções mais harmônicos */
+.rooms-section h2,
+.reports-summary h2 {
+  font-size: 1.25rem;
+  margin-bottom: 14px;
+  color: #1e2b4d;
+  font-weight: 700;
+  border-left: 4px solid var(--secondary-color);
+  padding-left: 10px;
+}
+.rooms-section,
+.reports-summary {
+  margin-bottom: 40px;
+}
+
+/* Responsivo */
+@media (max-width: 900px) {
+  .sidebar {
+    display: none;
+  }
+  .top-bar {
+    justify-content: flex-start;
+    padding-left: 18px;
+  }
+  .rooms-grid {
     justify-content: center;
-    align-items: center;
-    transition: background-color 0.2s;
+  }
 }
 
-.nav-button:hover {
-    background-color: var(--background-color);
+/* --- Estatísticas do topo --- */
+.stats-section {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 220px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  border-left: 5px solid var(--secondary-color);
+  transition: all 0.25s ease-in-out;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card i {
+  font-size: 28px;
+  color: var(--secondary-color);
+}
+
+.stat-card h3 {
+  font-size: 15px;
+  color: #1e2b4d;
+  margin-bottom: 4px;
+}
+
+.stat-card p {
+  color: var(--light-text-color);
+  font-weight: 600;
+}
+
+/* --- CADASTRO DE SALAS --- */
+.form-cadastro {
+  background: #ffffff;
+  padding: 30px 40px;
+  border-radius: 12px;
+  max-width: 600px;
+  margin: 30px auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #17307a;
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #dce1eb;
+  font-size: 14px;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #3a86ff;
+  outline: none;
+}
+
+.mensagem {
+  text-align: center;
+  font-weight: 600;
+  margin-top: 8px;
 }

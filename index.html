@@ -1,105 +1,180 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Salas</title>
-    <link rel="stylesheet" href="style.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - Salas</title>
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
+
 <body>
-    <div class="dashboard-container">
-        <aside class="sidebar">
-            <nav>
-                <a href="#" class="nav-item active">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="#" class="nav-item">
-                    <i class="fas fa-cog"></i> Configurações
-                </a>
-            </nav>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <header class="top-bar">
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link active">Página Inicial</a>
+        <a href="/salas" class="nav-link">Salas</a>
+        <a href="cadastro.html" class="nav-link">Cadastro</a>
+        <a href="relatorios.html" class="nav-link">Relatórios</a>
+      </nav>
+
+      <div class="user-actions">
+        <button class="icon-button" title="Notificações">
+          <i class="fas fa-bell"></i>
+        </button>
+        <button class="icon-button" id="configButton" title="Configurações">
+          <i class="fas fa-cog"></i>
+        </button>
+        <button class="icon-button" title="Ajuda">
+          <i class="fas fa-question-circle"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- BUSCA -->
+      <div class="filters-bar">
+        <form id="searchForm" class="search-form-container" onsubmit="return false;">
+          <input type="text" id="searchInput" placeholder="Pesquisar por número da sala, andar ou período..."
+            class="search-input" />
+          <button type="button" class="search-button" id="btnSearch"><i class="fas fa-search"></i></button>
+        </form>
+      </div>
+
+      <!-- PRÓXIMAS RESERVAS -->
+      <section class="reservations-summary">
+        <h2>Próximas Reservas</h2>
+        <div class="reservations-grid">
+          <div class="reservation-card">
+            <i class="fas fa-calendar-alt icon-left"></i>
+            <div class="info">
+              <div class="card-header-reserva">SALA 304 - Design Thinking</div>
+              <p>Início: 08/03 14:00 | Término: 08/03 17:00</p>
+              <p>Solicitante: João Silva</p>
+            </div>
+            <span class="status reserved">RESERVADA</span>
+          </div>
+
+          <div class="reservation-card">
+            <i class="fas fa-calendar-alt icon-left"></i>
+            <div class="info">
+              <div class="card-header-reserva">SALA 305 - Reunião de Equipe</div>
+              <p>Início: 09/03 09:00 | Término: 09/03 12:00</p>
+              <p>Solicitante: Maria Souza</p>
+            </div>
+            <span class="status available">DISPONÍVEL</span>
+          </div>
+        </div>
+      </section>
+
+      <hr class="section-divider" />
+
+      <!-- SALAS DISPONÍVEIS -->
+      <section class="rooms-section">
+        <h2>Salas Disponíveis</h2>
+        <div class="rooms-grid homepage-rooms">
+          <!-- cartões estáticos de exemplo (serão dinamizados por JS quando houver backend) -->
+          <div class="room-card">
+            <div class="card-header">SALA 307</div>
+            <p>Andar: 2°</p>
+            <p>Capacidade: 30 Alunos</p>
+            <p>Período: Manhã e Tarde</p>
+          </div>
+
+          <div class="room-card">
+            <div class="card-header">SALA 306</div>
+            <p>Andar: 2°</p>
+            <p>Capacidade: 30 Alunos</p>
+            <p>Período: Manhã e Tarde</p>
+          </div>
+
+          <div class="room-card">
+            <div class="card-header">SALA 305</div>
+            <p>Andar: 2°</p>
+            <p>Capacidade: 30 Alunos</p>
+            <p>Período: Manhã e Tarde</p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="section-divider" />
+
+      <!-- RELATÓRIOS RECENTES -->
+      <section class="reports-summary">
+        <h2>Relatórios Recentes</h2>
+        <div class="reports-list">
+          <div class="report-item">
+            <div class="report-header">
+              <i class="fas fa-clipboard-list"></i>
+              <span>Relatório de Ocupação - Mês de Fevereiro</span>
+            </div>
+            <p class="report-dates">Período: 01/02/2024 - 29/02/2024</p>
+            <p class="report-desc">Análise de pico de reservas no turno da tarde.</p>
+          </div>
+
+          <div class="report-item">
+            <div class="report-header">
+              <i class="fas fa-clipboard-list"></i>
+              <span>Relatório de Materiais Faltantes - Sala 307</span>
+            </div>
+            <p class="report-dates">Data: 07/03/2024</p>
+            <p class="report-desc">Controle remoto e cabos HDMI ausentes.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÕES (central) -->
+  <div id="configModal" class="config-modal" aria-hidden="true">
+    <div class="config-box" role="dialog" aria-modal="true" aria-labelledby="configTitle">
+      <button class="close-config" id="closeConfig" aria-label="Fechar"><i class="fas fa-times"></i></button>
+
+      <div class="config-container">
+        <aside class="config-sidebar">
+          <ul>
+            <li class="active" data-tab="geral"><i class="fas fa-cog"></i> Geral</li>
+            <li data-tab="personalizar"><i class="fas fa-paint-brush"></i> Personalizar</li>
+          </ul>
         </aside>
 
-        <main class="main-content">
-            <header class="top-bar">
-                <nav class="main-nav">
-                    <a href="#" class="nav-link active">Página Inicial</a>
-                    <a href="#" class="nav-link">Salas</a>
-                    <a href="#" class="nav-link">Cadastro</a>
-                </nav>
-                <div class="user-actions">
-                    <button class="icon-button"><i class="fas fa-bell"></i></button>
-                    <button class="icon-button"><i class="fas fa-user-circle"></i></button>
-                    <button class="icon-button"><i class="fas fa-question-circle"></i></button>
-                </div>
-            </header>
+        <div class="config-divider"></div>
 
-            <div class="content-area">
-                
-                <div class="filters-bar">
-                    <div class="filter-item">
-                        <i class="fas fa-search"></i>
-                        Controle não encontrado nos materiais de sala 307
-                    </div>
-                    <div class="filter-item product-design">
-                        <i class="fas fa-search"></i>
-                        Product Design
-                    </div>
-                    <div class="search-icon-container">
-                        <i class="fas fa-search"></i>
-                    </div>
-                </div>
+        <section class="config-content" id="configContent">
+          <h2 id="configTitle">Configurações</h2>
 
-                <section class="rooms-section available-rooms">
-                    <h2>Salas Disponíveis</h2>
-                    <div class="rooms-grid">
-                        <div class="room-card">
-                            <div class="card-header">SALA 304</div>
-                            <p>Andar: 2º</p>
-                            <p>Capacidade: 30 Alunos</p>
-                            <p>Período: Manhã E Tarde</p>
-                            <button class="download-icon"><i class="fas fa-download"></i></button>
-                        </div>
-                        
-                        <div class="room-card">
-                            <div class="card-header">SALA 305</div>
-                            <p>Andar: 2º</p>
-                            <p>Capacidade: 30 Alunos</p>
-                            <p>Período: Manhã E Tarde</p>
-                            <button class="download-icon"><i class="fas fa-download"></i></button>
-                        </div>
-
-                        <div class="room-card">
-                            <div class="card-header">SALA 306</div>
-                            <p>Andar: 2º</p>
-                            <p>Capacidade: 30 Alunos</p>
-                            <p>Período: Manhã E Tarde</p>
-                            <button class="download-icon"><i class="fas fa-download"></i></button>
-                        </div>
-
-                        <div class="room-navigation">
-                            <button class="nav-button"><i class="fas fa-chevron-left"></i></button>
-                            <button class="nav-button"><i class="fas fa-chevron-right"></i></button>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="rooms-section reserved-rooms">
-                    <h2>Salas Reservadas</h2>
-                    <div class="room-card reserved-card">
-                        <div class="card-header">SALA 307</div>
-                        <p>Andar: 2º</p>
-                        <p>Capacidade: 30 Alunos</p>
-                    </div>
-
-                    <div class="room-card reserved-card">
-                        <div class="card-header">SALA 310</div>
-                        <p>Andar: 2º</p>
-                        <p>Capacidade: 30 Alunos</p>
-                        <p>Período: Tarde</p>
-                    </div>
-                </section>
+          <div class="config-item">
+            <label for="theme-toggle">Tema Escuro</label>
+            <div class="switch-container">
+              <i class="fas fa-moon"></i>
+              <label class="switch">
+                <input type="checkbox" id="theme-toggle" />
+                <span class="slider round"></span>
+              </label>
             </div>
-        </main>
+          </div>
+
+          <div class="config-item">
+            <label for="notif-toggle">Notificações</label>
+            <label class="switch">
+              <input type="checkbox" id="notif-toggle" />
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </section>
+      </div>
     </div>
+  </div>
+
+  <!-- Script -->
+  <script src="script.js"></script>
 </body>
+
 </html>

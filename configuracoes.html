@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+  <div class="settings-container">
+    
+    <!-- Sidebar -->
+    <aside class="settings-sidebar">
+      <ul>
+        <li class="active">
+          <i class="fas fa-cog"></i> <span>Geral</span>
+        </li>
+        <li>
+          <i class="fas fa-paint-brush"></i> <span>Personalizar</span>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Divisor Vertical -->
+    <div class="settings-divider"></div>
+
+    <!-- Conteúdo Principal -->
+    <section class="settings-content">
+      <div class="setting-item">
+        <label for="theme-toggle">Temas:</label>
+        <div class="switch-container">
+          <i class="fas fa-moon"></i>
+          <label class="switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <label for="notif-toggle">Notificações:</label>
+        <label class="switch">
+          <input type="checkbox" id="notif-toggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

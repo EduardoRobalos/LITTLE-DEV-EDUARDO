@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Salas - Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+<body>
+
+    <main class="main-content">
+      <header class="top-bar">
+        <nav class="main-nav">
+          <a href="index.html" class="nav-link">Página Inicial</a>
+          <a href="/salas" class="nav-link active">Salas</a>
+          <a href="cadastro.html" class="nav-link">Cadastro</a>
+          <a href="relatorios.html" class="nav-link">Relatórios</a>
+        </nav>
+        <div class="user-actions">
+          <button class="icon-button" title="Notificações">
+            <i class="fas fa-bell"></i>
+          </button>
+          <button class="icon-button" id="configButton" title="Configurações">
+            <i class="fas fa-cog"></i>
+          </button>
+          <button class="icon-button" title="Ajuda">
+            <i class="fas fa-question-circle"></i>
+          </button>
+        </div>
+      </header>
+
+      <main class="content-area">
+        <section class="filters-bar">
+          <div class="search-form-container">
+            <input
+              type="text"
+              class="search-input"
+              placeholder="Pesquisar por número da sala, andar ou período..."
+            />
+            <button class="search-button">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </section>
+      
+        <!-- Estatísticas gerais -->
+        <section class="stats-section">
+          <div class="stat-card">
+            <i class="fas fa-door-open"></i>
+            <div>
+              <h3>Salas Disponíveis</h3>
+              <p>12 Salas</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-user-clock"></i>
+            <div>
+              <h3>Salas Reservadas</h3>
+              <p>8 Salas</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <div>
+              <h3>Capacidade Total</h3>
+              <p>680 Alunos</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-calendar-alt"></i>
+            <div>
+              <h3>Reservas da Semana</h3>
+              <p>24 Agendamentos</p>
+            </div>
+          </div>
+        </section>
+      
+        <!-- Seção de salas disponíveis -->
+        <section class="rooms-section">
+          <h2>Salas Disponíveis</h2>
+          <div class="rooms-grid">
+            <div class="room-card">
+              <div class="card-header">SALA 307</div>
+              <p><strong>Andar:</strong> 2º</p>
+              <p><strong>Capacidade:</strong> 30 Alunos</p>
+              <p><strong>Período:</strong> Manhã e Tarde</p>
+              <button class="btn small">Reservar</button>
+            </div>
+      
+            <div class="room-card">
+              <div class="card-header">SALA 306</div>
+              <p><strong>Andar:</strong> 2º</p>
+              <p><strong>Capacidade:</strong> 30 Alunos</p>
+              <p><strong>Período:</strong> Tarde</p>
+              <button class="btn small">Reservar</button>
+            </div>
+          </div>
+        </section>
+      
+        <!-- Seção de salas reservadas -->
+        <section class="rooms-section">
+          <h2>Salas Reservadas</h2>
+          <div class="rooms-grid">
+            <div class="room-card">
+              <div class="card-header">SALA 310</div>
+              <p><strong>Andar:</strong> 2º</p>
+              <p><strong>Capacidade:</strong> 30 Alunos</p>
+              <p><strong>Período:</strong> Tarde</p>
+              <button class="btn small ghost">Ver Detalhes</button>
+            </div>
+      
+            <div class="room-card">
+              <div class="card-header">SALA 311</div>
+              <p><strong>Andar:</strong> 2º</p>
+              <p><strong>Capacidade:</strong> 30 Alunos</p>
+              <p><strong>Período:</strong> Manhã</p>
+              <button class="btn small ghost">Ver Detalhes</button>
+            </div>
+          </div>
+        </section>
+      
+        <!-- Próximas reservas -->
+        <section class="reports-summary">
+          <h2>Próximas Reservas</h2>
+          <div class="reservations-grid">
+            <div class="reservation-card">
+              <i class="fas fa-calendar-alt icon-left"></i>
+              <div class="info">
+                <p><strong>SALA 304 - Design Thinking</strong></p>
+                <p>Início: 08/03 às 14:00 | Término: 08/03 às 17:00</p>
+                <p>Solicitante: João Silva</p>
+              </div>
+              <span class="status reserved">RESERVADA</span>
+            </div>
+          </div>
+        </section>
+      
+        <!-- Seção adicional: avisos e relatórios -->
+        <section class="reports-summary">
+          <h2>Relatórios Recentes</h2>
+          <div class="reports-list">
+            <div class="report-item">
+              <div class="report-header">
+                <i class="fas fa-chart-line"></i>
+                <span><strong>Relatório de Ocupação - Fevereiro</strong></span>
+              </div>
+              <p>
+                Análise de pico de reservas no turno da tarde. Recomendação: mais salas no 2º andar.
+              </p>
+            </div>
+      
+            <div class="report-item">
+              <div class="report-header">
+                <i class="fas fa-tools"></i>
+                <span><strong>Relatório de Materiais Faltantes - Sala 307</strong></span>
+              </div>
+              <p>
+                Controle remoto e cabos HDMI ausentes após última reserva. Ações corretivas em andamento.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+  </div>
+
+  <!-- modal (mesmo do index) -->
+  <div id="configModal" class="config-modal" aria-hidden="true">
+    <div class="config-box" role="dialog" aria-modal="true" aria-labelledby="configTitle">
+      <button class="close-config" id="closeConfig" aria-label="Fechar"><i class="fas fa-times"></i></button>
+      <div class="config-container">
+        <aside class="config-sidebar">
+          <ul>
+            <li class="active" data-tab="geral"><i class="fas fa-cog"></i> Geral</li>
+            <li data-tab="personalizar"><i class="fas fa-paint-brush"></i> Personalizar</li>
+          </ul>
+        </aside>
+        <div class="config-divider"></div>
+        <section class="config-content" id="configContent">
+          <h2 id="configTitle">Configurações</h2>
+
+          <div class="config-item">
+            <label for="theme-toggle">Tema Escuro</label>
+            <div class="switch-container">
+              <i class="fas fa-moon"></i>
+              <label class="switch">
+                <input type="checkbox" id="theme-toggle" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="config-item">
+            <label for="notif-toggle">Notificações</label>
+            <label class="switch">
+              <input type="checkbox" id="notif-toggle" />
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
