@@ -1,10 +1,16 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const dbConnection = require('./models/db'); 
+const dbConnection = require('./models/db');
+const util = require('util');
+const query = util.promisify(dbConnection.query).bind(dbConnection); 
 
 const app = express();
 const PORT = 8080; 
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'src')));
+
 
 const upload = multer({ 
     storage: multer.memoryStorage(),
@@ -52,21 +58,21 @@ app.post('/salas', upload.single('arquivo_upload'), async (req, res) => {
 });
 
 // rota para cadastrar nova sala
-app.post("/cadastrar-sala", (req, res) => {
-    const { numero, andar, capacidade, periodo, status } = req.body;
+app.post("/cadastro", async (req, res) => {
+    console.log(req.body)
+    const { numero, andar, capacidade, bloco } = req.body;
+    console.log(numero, andar, bloco, capacidade)
   
-    if (!numero || !andar || !capacidade || !periodo || !status) {
+    if (!numero || !andar || !capacidade || !bloco) {
       return res.status(400).send("Campos obrigatórios ausentes");
     }
-  
-    const sql = "INSERT INTO salas (numero, andar, capacidade, periodo, status) VALUES (?, ?, ?, ?, ?)";
-    db.query(sql, [numero, andar, capacidade, periodo, status], (err, result) => {
-      if (err) {
-        console.error("Erro ao inserir sala:", err);
-        return res.status(500).send("Erro ao cadastrar sala");
-      }
-      res.sendStatus(200);
-    });
+    try{
+        const results = await query ('INSERT INTO salas (numero, andar, capacidade, bloco) VALUES (?, ?, ?, ?)',[numero, andar, capacidade, bloco ]);
+    }
+    catch (err) {
+        console.error('Erro no MySQL:', err);
+        res.status(500).json({ error: err.message });
+    }
   });
 
 app.get('/arquivos', async (req, res) => {
@@ -183,6 +189,11 @@ app.get('/', (req, res) => {
 app.get('/salas', (req, res) => {
     // Certifique-se de que seu arquivo 'cadastro.html' existe na pasta 'src'
     res.sendFile(path.join(__dirname, 'src', 'salas.html'));
+});
+
+app.get('/cadastro', (req, res) => {
+    // Certifique-se de que seu arquivo 'cadastro.html' existe na pasta 'src'
+    res.sendFile(path.join(__dirname, 'src', 'cadastro.html'));
 });
 
 app.listen(8080, () => {
