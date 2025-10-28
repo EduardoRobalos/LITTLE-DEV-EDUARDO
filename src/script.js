@@ -6,54 +6,6 @@ const closeButtons = document.querySelectorAll(".close-modal");
 const dataInput = document.getElementById("dataReserva");
 const horarios = document.getElementById("horarioReserva");
 
-// Simulação de dados (substituir por fetch do backend)
-let salas = [
-  {
-    numero: "307",
-    andar: 2,
-    capacidade: 30,
-    periodo: "Manhã e Tarde",
-    status: "Disponível",
-  },
-  {
-    numero: "306",
-    andar: 2,
-    capacidade: 30,
-    periodo: "Tarde",
-    status: "Disponível",
-  },
-  {
-    numero: "305",
-    andar: 2,
-    capacidade: 30,
-    periodo: "Manhã e Tarde",
-    status: "Disponível",
-  },
-  {
-    numero: "310",
-    andar: 2,
-    capacidade: 30,
-    periodo: "Tarde",
-    status: "Reservada",
-  },
-  {
-    numero: "311",
-    andar: 2,
-    capacidade: 30,
-    periodo: "Manhã",
-    status: "Reservada",
-  },
-];
-let reservas = [
-  {
-    sala: "304",
-    descricao: "Design Thinking",
-    inicio: "08/03 14:00",
-    termino: "08/03 17:00",
-    solicitante: "João Silva",
-  },
-];
-
 function renderSalas(containerId, statusFilter) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -461,3 +413,45 @@ document.addEventListener("DOMContentLoaded", () => {
     reservaForm.reset();
   });
 });
+
+async function carregarSalasHomepage() {
+  const container = document.getElementById("listaSalas");
+  if (!container) return;
+
+  try {
+      const response = await fetch("/api/salas");
+      const data = await response.json();
+
+      if (!data.success || data.salas.length === 0) {
+          container.innerHTML = "<p>Nenhuma sala cadastrada.</p>";
+          return;
+      }
+
+      container.innerHTML = ""; // limpa conteúdo atual
+
+      data.salas.forEach(sala => {
+          const card = document.createElement("div");
+          card.classList.add("room-card");
+
+          card.innerHTML = `
+              <div class="card-header">SALA ${sala.numero}</div>
+              <p><strong>Andar:</strong> ${sala.andar}°</p>
+              <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
+              <p><strong>Bloco:</strong> ${sala.bloco}</p>
+          `;
+
+          container.appendChild(card);
+      });
+
+  } catch (error) {
+      console.error("Erro ao carregar salas:", error);
+      container.innerHTML = "<p>Erro ao carregar salas.</p>";
+  }
+}
+
+carregarSalasHomepage();
+
+function abrirReserva(salasID) {
+  console.log("Reservar sala:", salasID);
+  // Aqui futuramente abriremos o modal com calendário
+}

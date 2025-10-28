@@ -185,6 +185,18 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'index.html'));
 });
 
+// Rota para listar salas na página inicial
+app.get("/api/salas", async (req, res) => {
+    try {
+        const query = "SELECT * FROM salas ORDER BY numero ASC";
+        const resultados = await executePromisified(query);
+        res.json({ success: true, salas: resultados });
+    } catch (err) {
+        console.error("Erro ao buscar salas:", err);
+        res.status(500).json({ success: false, message: "Erro ao carregar salas." });
+    }
+});
+
 // NOVA ROTA para a página de Cadastro
 app.get('/salas', (req, res) => {
     // Certifique-se de que seu arquivo 'cadastro.html' existe na pasta 'src'

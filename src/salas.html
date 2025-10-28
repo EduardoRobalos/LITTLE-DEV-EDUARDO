@@ -79,50 +79,16 @@
       
         <!-- Seção de salas disponíveis -->
         <section class="rooms-section">
-          <h2>Salas Disponíveis</h2>
-          <div class="rooms-grid">
-            <div class="room-card">
-              <div class="card-header">SALA 307</div>
-              <p><strong>Andar:</strong> 2º</p>
-              <p><strong>Capacidade:</strong> 30 Alunos</p>
-              <p><strong>Período:</strong> Manhã e Tarde</p>
-              <button class="btn small btn-reservar">Reservar</button>
-            </div>
-      
-            <div class="room-card">
-              <div class="card-header">SALA 306</div>
-              <p><strong>Andar:</strong> 2º</p>
-              <p><strong>Capacidade:</strong> 30 Alunos</p>
-              <p><strong>Período:</strong> Tarde</p>
-              <button class="btn small btn-reservar">Reservar</button>
-            </div>
-          </div>
-        </section>
-      
-        <!-- Seção de salas reservadas -->
-        <section class="rooms-section">
-          <h2>Salas Reservadas</h2>
-          <div class="rooms-grid">
-            <div class="room-card">
-              <div class="card-header">SALA 310</div>
-              <p><strong>Andar:</strong> 2º</p>
-              <p><strong>Capacidade:</strong> 30 Alunos</p>
-              <p><strong>Período:</strong> Tarde</p>
-              <button class="btn small ghost btn-detalhes">Ver mais</button>
-            </div>
-      
-            <div class="room-card">
-              <div class="card-header">SALA 311</div>
-              <p><strong>Andar:</strong> 2º</p>
-              <p><strong>Capacidade:</strong> 30 Alunos</p>
-              <p><strong>Período:</strong> Manhã</p>
-              <button class="btn small ghost btn-detalhes">Ver mais</button>
-            </div>
-          </div>
-        </section>
+          <section class="rooms-section">
+            <h2>Salas Disponíveis</h2>
+            <div id="listaSalas" class="rooms-grid"></div>
+          </section>
+          
+          <section class="rooms-section">
+            <h2>Salas Reservadas</h2>
+            <div id="salasReservadas" class="rooms-grid"></div>
+          </section>
 
-        
-      
         <!-- Próximas reservas -->
         <section class="reports-summary">
           <h2>Próximas Reservas</h2>
