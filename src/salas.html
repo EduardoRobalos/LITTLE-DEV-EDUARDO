@@ -143,37 +143,28 @@
     </div>
   </div>
 
-  <!-- MODAL DE RESERVA (novo, similar ao de configurações) -->
-  <div id="reservaModal" class="reserva-modal">
-    <div class="reserva-box">
-      <button class="close-reserva">&times;</button>
-      <h2>Reservar Sala</h2>
-      <form id="reservaForm">
-        <div class="form-group">
-          <div class="form-group">
-            <label for="solicitante">Nome do Solicitante</label>
-            <input type="text" id="solicitante" placeholder="Seu nome completo" required>
-          </div>
-          <label for="dataReserva">Selecione a data da reserva</label>
-          <input type="date" id="dataReserva" required>
-        </div>
-        <div class="form-group">
-          <label for="horarioReserva">Selecione o horário</label>
-          <select id="horarioReserva" required>
-            <option value="">Escolha um horário</option>
-            <option value="08:00 - 10:00">08:00 - 10:00</option>
-            <option value="10:00 - 12:00">10:00 - 12:00</option>
-            <option value="13:00 - 15:00">13:00 - 15:00</option>
-            <option value="15:00 - 17:00">15:00 - 17:00</option>
-            <option value="17:00 - 19:00">17:00 - 19:00</option>
-            <option value="19:00 - 21:00">19:00 - 21:00</option>
-          </select>
-        </div>
-        <button type="submit" class="btn-reservar-confirmar">Confirmar Reserva</button>
-      </form>
-    </div>
-  </div>
+  <!-- MODAL DE RESERVA -->
+<div id="reservaModal" class="reserva-modal">
+  <div class="reserva-box">
+    <button class="btn-reservR">&times;</button>
+    <h2>Reservar Sala</h2>
+    <form id="reservaForm">
+      <label for="dataReserva">Selecione a data da reserva</label>
+      <input type="date" id="dataReserva" required>
 
+      <label for="horarioReserva">Selecione o horário</label>
+      <select id="horarioReserva" required>
+        <option value="">Escolha um horário</option>
+        <option value="08:00 - 10:00">08:00 - 10:00</option>
+        <option value="10:00 - 12:00">10:00 - 12:00</option>
+        <option value="13:00 - 15:00">13:00 - 15:00</option>
+        <option value="15:00 - 17:00">15:00 - 17:00</option>
+      </select>
+
+      <button type="submit" class="btn-reservar-confirmar">Confirmar Reserva</button>
+    </form>
+  </div>
+</div>
   <!-- MODAL DE DETALHES (novo, para "Ver mais") -->
   <div id="detalhesModal" class="reserva-modal">
     <div class="reserva-box">

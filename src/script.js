@@ -414,44 +414,64 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-async function carregarSalasHomepage() {
-  const container = document.getElementById("listaSalas");
-  if (!container) return;
+async function carregarSalas() {
+  const disponiveisContainer = document.getElementById("listaSalas");
+  const reservadasContainer = document.getElementById("salasReservadas");
+  if (!disponiveisContainer || !reservadasContainer) return;
 
   try {
-      const response = await fetch("/api/salas");
-      const data = await response.json();
+    const response = await fetch("/rooms");
+    const data = await response.json();
 
-      if (!data.success || data.salas.length === 0) {
-          container.innerHTML = "<p>Nenhuma sala cadastrada.</p>";
-          return;
+    if (!data.success || data.rooms.length === 0) {
+      disponiveisContainer.innerHTML = "<p>Nenhuma sala cadastrada.</p>";
+      return;
+    }
+
+    disponiveisContainer.innerHTML = "";
+    reservadasContainer.innerHTML = "";
+    let disponiveisCount = 0;
+    let reservadasCount = 0;
+    let capacidadeTotal = 0;
+
+    data.rooms.forEach(sala => {
+      const card = document.createElement("div");
+      card.classList.add("room-card");
+      card.innerHTML = `
+        <div class="card-header">SALA ${sala.numero}</div>
+        <p><strong>Andar:</strong> ${sala.andar}°</p>
+        <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
+        <p><strong>Bloco:</strong> ${sala.bloco}</p>
+        <button class="btn small ${sala.status === "Reservada" ? "ghost btn-detalhes" : "btn-reservar"}">
+          ${sala.status === "Reservada" ? "Ver mais" : "Reservar"}
+        </button>
+      `;
+      if (sala.status === "Disponível") {
+        disponiveisContainer.appendChild(card);
+        disponiveisCount++;
+      } else {
+        reservadasContainer.appendChild(card);
+        reservadasCount++;
       }
+      capacidadeTotal += parseInt(sala.capacidade, 10) || 0;
+    });
 
-      container.innerHTML = ""; // limpa conteúdo atual
-
-      data.salas.forEach(sala => {
-          const card = document.createElement("div");
-          card.classList.add("room-card");
-
-          card.innerHTML = `
-              <div class="card-header">SALA ${sala.numero}</div>
-              <p><strong>Andar:</strong> ${sala.andar}°</p>
-              <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
-              <p><strong>Bloco:</strong> ${sala.bloco}</p>
-          `;
-
-          container.appendChild(card);
-      });
+    // Update stats (previously hardcoded)
+    document.querySelector(".stat-card:nth-child(1) p").textContent = `${disponiveisCount} Salas`;
+    document.querySelector(".stat-card:nth-child(2) p").textContent = `${reservadasCount} Salas`;
+    document.querySelector(".stat-card:nth-child(3) p").textContent = `${capacidadeTotal} Alunos`;
+    // Note: "Reservas da Semana" stat remains hardcoded for now; add a separate fetch if needed.
 
   } catch (error) {
-      console.error("Erro ao carregar salas:", error);
-      container.innerHTML = "<p>Erro ao carregar salas.</p>";
+    console.error("Erro ao carregar salas:", error);
+    disponiveisContainer.innerHTML = "<p>Erro ao carregar salas.</p>";
   }
 }
 
-carregarSalasHomepage();
-
+// In the DOMContentLoaded event listener or at the bottom of script.js, replace carregarSalasHomepage(); with:
+carregarSalas();
 function abrirReserva(salasID) {
   console.log("Reservar sala:", salasID);
   // Aqui futuramente abriremos o modal com calendário
 }
+
