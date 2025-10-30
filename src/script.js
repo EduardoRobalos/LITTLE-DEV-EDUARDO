@@ -158,34 +158,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Pesquisa (client-side para Salas)
-  const searchInputSalas = $(
-    "#searchInput",
-    document
-      .querySelector("#salasDisponiveis")
-      ?.closest(".content-area")
-      ?.querySelector(".filters-bar")
-      ?.querySelector("#searchInput")
-  );
-  const btnSearchSalas = $(
-    "#btnSearch",
-    document
-      .querySelector("#salasDisponiveis")
-      ?.closest(".content-area")
-      ?.querySelector(".filters-bar")
-      ?.querySelector("#btnSearch")
-  );
-  if (btnSearchSalas && searchInputSalas) {
-    btnSearchSalas.addEventListener("click", () => {
-      const term = searchInputSalas.value.trim().toLowerCase();
-      filterRooms(term, "#salasDisponiveis, #salasReservadas");
-    });
-    searchInputSalas.addEventListener("keyup", () => {
-      const term = searchInputSalas.value.trim().toLowerCase();
-      filterRooms(term, "#salasDisponiveis, #salasReservadas");
-    });
-  }
-
-
+  // Pesquisa (client-side para Salas)
+const searchInputSalas = $(
+  "#searchInput",
+  document
+    .querySelector("#listaSalas")
+    ?.closest(".content-area")
+    ?.querySelector(".filters-bar")
+    ?.querySelector("#searchInput")
+);
+const btnSearchSalas = $(
+  "#btnSearch",
+  document
+    .querySelector("#listaSalas")
+    ?.closest(".content-area")
+    ?.querySelector(".filters-bar")
+    ?.querySelector("#btnSearch")
+);
+if (btnSearchSalas && searchInputSalas) {
+  btnSearchSalas.addEventListener("click", () => {
+    const term = searchInputSalas.value.trim().toLowerCase();
+    filterRooms(term, "#listaSalas, #salasReservadas");
+  });
+  searchInputSalas.addEventListener("keyup", () => {
+    const term = searchInputSalas.value.trim().toLowerCase();
+    filterRooms(term, "#listaSalas, #salasReservadas");
+  });
+}
   
 
   // Inicialização do Flatpickr
@@ -450,8 +449,3 @@ async function carregarSalasHomepage() {
 }
 
 carregarSalasHomepage();
-
-function abrirReserva(salasID) {
-  console.log("Reservar sala:", salasID);
-  // Aqui futuramente abriremos o modal com calendário
-}

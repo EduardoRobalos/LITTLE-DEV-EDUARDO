@@ -75,6 +75,46 @@ app.post("/cadastro", async (req, res) => {
     }
   });
 
+// NOVA ROTA: Rota para RESERVAR uma sala
+app.post("/api/reservar", async (req, res) => {
+    const { salaID, data, horario, solicitante } = req.body;
+
+    if (!salaID || !data || !horario || !solicitante) {
+        return res.status(400).json({ success: false, message: "Dados incompletos para a reserva." });
+    }
+
+    try {
+        // Início da transação (para garantir que ambas as ações sejam feitas ou nenhuma)
+        await executePromisified('START TRANSACTION');
+
+        // 1. INSERE A RESERVA na tabela de reservas (Você precisa ter uma tabela `reservas`)
+        // ATENÇÃO: Se sua tabela for diferente, ajuste o SQL!
+        const insertQuery = `
+            INSERT INTO reservas (salaID, data_reserva, horario_reserva, solicitante)
+            VALUES (?, ?, ?, ?)
+        `;
+        await executePromisified(insertQuery, [salaID, data, horario, solicitante]);
+
+        // 2. ATUALIZA O STATUS DA SALA para 'Reservada' na tabela 'salas'
+        // ATENÇÃO: Ajuste o campo e o nome da tabela se for diferente!
+        const updateQuery = `
+            UPDATE salas SET status = 'Reservada' WHERE id = ?
+        `;
+        await executePromisified(updateQuery, [salaID]);
+        
+        // Finaliza a transação com sucesso
+        await executePromisified('COMMIT');
+
+        res.json({ success: true, message: "Reserva realizada e sala atualizada com sucesso." });
+
+    } catch (erro) {
+        // Em caso de erro, desfaz as ações da transação
+        await executePromisified('ROLLBACK');
+        console.error('Erro ao reservar sala:', erro);
+        res.status(500).json({ success: false, message: 'Erro interno ao processar a reserva.' });
+    }
+});
+
 app.get('/arquivos', async (req, res) => {
     try {
         const query = 'SELECT id, nome, tipo_mime, data_upload FROM arquivos ORDER BY data_upload DESC';
