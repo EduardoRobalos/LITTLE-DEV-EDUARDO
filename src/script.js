@@ -1,451 +1,270 @@
 // Helper: query selector safe
 const $ = (sel, ctx = document) => ctx.querySelector(sel);
+
+// Variáveis de Elementos DOM
 const modalReserva = document.getElementById("reservaModal");
 const modalDetalhes = document.getElementById("detalhesModal");
-const closeButtons = document.querySelectorAll(".close-modal");
+// Seleciona todos os botões de fechar
+const closeButtons = document.querySelectorAll(".close-modal, .close-reserva, .close-config, .close"); 
 const dataInput = document.getElementById("dataReserva");
 const horarios = document.getElementById("horarioReserva");
+const reservaForm = document.getElementById("reservaForm");
+const salaTituloModal = document.getElementById("salaTituloModal"); // Elemento para o título
+
+// VARIÁVEIS GLOBAIS
+let salas = []; 
+let salaSelecionadaId = null; // CRÍTICO: Variável para armazenar o ID da sala selecionada
+
+// --- Funções Auxiliares ---
+
+// Função para fechar qualquer modal
+function fecharModal(modalElement) {
+    if (modalElement && modalElement.style.display === "flex") {
+        modalElement.style.display = "none";
+        document.body.style.overflow = "auto";
+    }
+}
+
+// Abre o modal de reserva e armazena o ID da sala
+function abrirModalReserva(salaId) {
+    const sala = salas.find((s) => s.id == salaId);
+    if (!sala) return;
+    
+    // CRÍTICO: Armazena o ID da sala na variável global e no dataset do formulário
+    salaSelecionadaId = sala.id;
+    if (reservaForm) reservaForm.dataset.salaId = sala.id;
+
+    if (salaTituloModal) {
+      salaTituloModal.textContent = `Sala ${sala.numero} - Bloco ${sala.bloco}`;
+    }
+
+    modalReserva.style.display = "flex";
+    document.body.style.overflow = "hidden";
+}
+
+// Função de conversão de data
+// Converte DD/MM/YYYY para YYYY-MM-DD
+function convertToISO(dateString) {
+    if (!dateString) return '';
+    // Verifica se já está no formato ISO (YYYY-MM-DD)
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) return dateString;
+
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`; 
+    }
+    return ''; 
+}
+
+// --- Lógica de Carregamento e Renderização ---
 
 function renderSalas(containerId, statusFilter) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = "";
-  const filteredSalas = salas.filter((sala) => sala.status === statusFilter);
-  filteredSalas.forEach((sala) => {
-    const card = document.createElement("div");
-    card.classList.add("room-card");
-    card.innerHTML = `
-      <div class="card-header">SALA ${sala.numero}</div>
-      <p><strong>Andar:</strong> ${sala.andar}º</p>
-      <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
-      <p><strong>Período:</strong> ${sala.periodo}</p>
-      <button class="btn small ${
-        sala.status === "Reservada" ? "ghost btn-detalhes" : "btn-reservar"
-      }">
-        ${sala.status === "Reservada" ? "Ver mais" : "Reservar"}
-      </button>
-    `;
-    container.appendChild(card);
-  });
-  updateCounts();
-}
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = "";
+    
+    if (!salas || salas.length === 0) {
+        container.innerHTML = `<p class="no-rooms">Nenhuma sala cadastrada ou erro no carregamento.</p>`;
+        return;
+    }
 
-function renderReservas(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = "";
-  reservas.forEach((reserva) => {
-    const card = document.createElement("div");
-    card.classList.add("reservation-card");
-    card.innerHTML = `
-      <i class="fas fa-calendar-alt icon-left"></i>
-      <div class="info">
-        <p><strong>${reserva.sala} - ${reserva.descricao}</strong></p>
-        <p>Início: ${reserva.inicio} | Término: ${reserva.termino}</p>
-        <p>Solicitante: ${reserva.solicitante}</p>
-      </div>
-      <span class="status reserved">RESERVADA</span>
-    `;
-    container.appendChild(card);
-  });
-}
+    // Filtra as salas pelo status (Disponível ou Reservada)
+    const filteredSalas = salas.filter((sala) => (sala.status || 'Disponível') === statusFilter); 
 
-function updateCounts() {
-  const disponiveis = salas.filter((s) => s.status === "Disponível").length;
-  const reservadas = salas.filter((s) => s.status === "Reservada").length;
-  document.getElementById(
-    "salasDisponiveisCount"
-  ).textContent = `${disponiveis} Salas`;
-  document.getElementById(
-    "salasReservadasCount"
-  ).textContent = `${reservadas} Salas`;
-}
+    if (filteredSalas.length === 0) {
+        const message = statusFilter === "Disponível" ? "Nenhuma sala disponível no momento." : "Nenhuma sala reservada no momento.";
+        container.innerHTML = `<p class="no-rooms">${message}</p>`;
+        return;
+    }
 
-// Abre/fecha modal e alternância de abas
-document.addEventListener("DOMContentLoaded", () => {
-  const configButtons = document.querySelectorAll("#btnConfig");
-  const modal = $("#configModal");
-  const closeBtn = $("#closeConfig");
+    filteredSalas.forEach((sala) => {
+        const card = document.createElement("div");
+        card.classList.add("room-card");
+        
+        const isReserved = sala.status === "Reservada";
+        const buttonClass = isReserved ? "ghost btn-detalhes" : "btn-reservar";
+        const buttonText = isReserved ? "Ver mais" : "Reservar";
 
-  // open handlers
-  configButtons.forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (modal) modal.style.display = "flex";
+        // Aqui usamos sala.id 
+        card.innerHTML = `
+            <div class="card-header">SALA ${sala.numero} - Bloco ${sala.bloco || 'A'}</div>
+            <p><strong>Andar:</strong> ${sala.andar}º</p>
+            <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
+            <p><strong>Período:</strong> ${sala.periodo || 'Indefinido'}</p>
+            
+            <button class="btn small ${buttonClass}" data-sala-id="${sala.id}">
+                ${buttonText}
+            </button>
+        `;
+        container.appendChild(card);
     });
-  });
-
-  // close X
-  if (closeBtn)
-    closeBtn.addEventListener("click", () => {
-      if (modal) modal.style.display = "none";
+    
+    // Adiciona listeners aos botões de reserva
+    container.querySelectorAll(".btn-reservar").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const salaId = this.dataset.salaId;
+            abrirModalReserva(salaId);
+        });
     });
 
-  // close ao clicar fora
-  if (modal)
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.style.display = "none";
-    });
+    // ... (Lógica para btn-detalhes se necessário)
+}
 
-  // abas do modal
-  const tabs = document.querySelectorAll(".config-sidebar li");
-  const configContent = $("#configContent");
+async function carregarDadosIniciais() {
+    const containerDisponiveis = document.getElementById("listaSalas"); // Container para disponíveis
+    const containerReservadas = document.getElementById("salasReservadas"); // Container para reservadas
+    
+    if (!containerDisponiveis) return;
+    
+    containerDisponiveis.innerHTML = `<p class="loading-message">Carregando salas...</p>`;
+    if (containerReservadas) containerReservadas.innerHTML = `<p class="loading-message">Carregando salas reservadas...</p>`;
 
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("active"));
-      tab.classList.add("active");
-      const name = tab.dataset.tab;
-      if (configContent) {
-        if (name === "geral") {
-          configContent.querySelector("h2").textContent =
-            "Configurações — Geral";
-        } else {
-          configContent.querySelector("h2").textContent =
-            "Configurações — Personalizar";
+    try {
+        // 1. Busca as Salas
+        const responseSalas = await fetch("/api/salas"); 
+        const dataSalas = await responseSalas.json();
+
+        if (!responseSalas.ok || !dataSalas.success) {
+            throw new Error(dataSalas.message || `Falha ao buscar salas: Status ${responseSalas.status}`);
         }
-      }
-    });
-  });
+        
+        // Adaptação dos dados
+        salas = dataSalas.salas.map(s => ({
+            id: s.salasID || s.id, // Suporte para 'salasID' ou 'id'
+            numero: s.numero,
+            andar: s.andar,
+            capacidade: s.capacidade,
+            bloco: s.bloco,
+            // O status deve vir do backend
+            status: s.status || 'Disponível', 
+            periodo: s.periodo 
+        }));
+       const salasDisponiveis = salas.filter(s => s.status === "Disponível").length;
+const salasReservadas = salas.filter(s => s.status === "Reservada").length;
+const capacidadeTotal = salas.reduce((sum, s) => sum + (parseInt(s.capacidade) || 0), 0);
+const reservasSemana = salasReservadas; // Se você tiver API de reservas da semana, trocamos depois.
 
-  // Tema
-  const themeToggle = $("#theme-toggle");
-  const root = document.documentElement;
-  const saved = localStorage.getItem("site-theme") || "light";
-  applyTheme(saved);
+// Atualiza no DOM
+$("#countDisponiveis").textContent = `${salasDisponiveis} Salas`;
+$("#countReservadas").textContent = `${salasReservadas} Salas`;
+$("#capacidadeTotal").textContent = `${capacidadeTotal} Alunos`;
+$("#reservasSemana").textContent = `${reservasSemana} Agendamentos`;
 
-  if (themeToggle) {
-    themeToggle.checked = saved === "dark";
-    themeToggle.addEventListener("change", (e) => {
-      const v = e.target.checked ? "dark" : "light";
-      applyTheme(v);
-      localStorage.setItem("site-theme", v);
-    });
-  }
-
-  // botão fechar modal ao pressionar Esc
-  document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && modal && modal.style.display === "flex")
-      modal.style.display = "none";
-  });
-
-  // Pesquisa (client-side para Página Inicial)
-  const searchInputHome = $(
-    "#searchInput",
-    document
-      .querySelector(".homepage-rooms")
-      ?.closest(".content-area")
-      ?.querySelector(".filters-bar")
-      ?.querySelector("#searchForm")
-  );
-  const btnSearchHome = $(
-    "#btnSearch",
-    document
-      .querySelector(".homepage-rooms")
-      ?.closest(".content-area")
-      ?.querySelector(".filters-bar")
-      ?.querySelector("#searchForm")
-  );
-  if (btnSearchHome && searchInputHome) {
-    btnSearchHome.addEventListener("click", () => {
-      const term = searchInputHome.value.trim().toLowerCase();
-      filterRooms(term, ".homepage-rooms");
-    });
-    searchInputHome.addEventListener("keyup", () => {
-      const term = searchInputHome.value.trim().toLowerCase();
-      filterRooms(term, ".homepage-rooms");
-    });
-  }
-
-  // Pesquisa (client-side para Salas)
-  // Pesquisa (client-side para Salas)
-const searchInputSalas = $(
-  "#searchInput",
-  document
-    .querySelector("#listaSalas")
-    ?.closest(".content-area")
-    ?.querySelector(".filters-bar")
-    ?.querySelector("#searchInput")
-);
-const btnSearchSalas = $(
-  "#btnSearch",
-  document
-    .querySelector("#listaSalas")
-    ?.closest(".content-area")
-    ?.querySelector(".filters-bar")
-    ?.querySelector("#btnSearch")
-);
-if (btnSearchSalas && searchInputSalas) {
-  btnSearchSalas.addEventListener("click", () => {
-    const term = searchInputSalas.value.trim().toLowerCase();
-    filterRooms(term, "#listaSalas, #salasReservadas");
-  });
-  searchInputSalas.addEventListener("keyup", () => {
-    const term = searchInputSalas.value.trim().toLowerCase();
-    filterRooms(term, "#listaSalas, #salasReservadas");
-  });
-}
-  
-
-  // Inicialização do Flatpickr
-  flatpickr("#dataReserva", {
-    dateFormat: "d/m/Y",
-    locale: {
-      firstDayOfWeek: 1,
-      weekdays: {
-        shorthand: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
-        longhand: [
-          "Domingo",
-          "Segunda",
-          "Terça",
-          "Quarta",
-          "Quinta",
-          "Sexta",
-          "Sábado",
-        ],
-      },
-      months: {
-        shorthand: [
-          "Jan",
-          "Fev",
-          "Mar",
-          "Abr",
-          "Mai",
-          "Jun",
-          "Jul",
-          "Ago",
-          "Set",
-          "Out",
-          "Nov",
-          "Dez",
-        ],
-        longhand: [
-          "Janeiro",
-          "Fevereiro",
-          "Março",
-          "Abril",
-          "Maio",
-          "Junho",
-          "Julho",
-          "Agosto",
-          "Setembro",
-          "Outubro",
-          "Novembro",
-          "Dezembro",
-        ],
-      },
-      weekAbbreviation: "Sem.",
-      rangeSeparator: " a ",
-      scrollTitle: "Rolar para alterar",
-      toggleTitle: "Clicar para alternar",
-      today: "Hoje",
-      close: "Fechar",
-    },
-    minDate: "today",
-    enableTime: false,
-    onReady: function (selectedDates, dateStr, instance) {
-      instance.calendarContainer.style.fontFamily = "Inter, sans-serif";
-    },
-  });
-});
-
-// Aplica tema
-function applyTheme(mode) {
-  if (mode === "dark") {
-    document.documentElement.style.setProperty("--primary-color", "#0f274f");
-    document.documentElement.style.setProperty("--secondary-color", "#3467f0");
-    document.documentElement.style.setProperty("--background-color", "#0b0f1a");
-    document.documentElement.style.setProperty("--card-bg", "#0f1724");
-    document.documentElement.style.setProperty("--text-color", "#e6eef8");
-    document.documentElement.style.setProperty("--light-text-color", "#97a3c1");
-    document.documentElement.style.setProperty(
-      "--sidebar-active-bg",
-      "#0b1838"
-    );
-  } else {
-    document.documentElement.style.setProperty("--primary-color", "#17307a");
-    document.documentElement.style.setProperty("--secondary-color", "#3a86ff");
-    document.documentElement.style.setProperty("--background-color", "#f6f7fb");
-    document.documentElement.style.setProperty("--card-bg", "#ffffff");
-    document.documentElement.style.setProperty("--text-color", "#222");
-    document.documentElement.style.setProperty("--light-text-color", "#6f7785");
-    document.documentElement.style.setProperty(
-      "--sidebar-active-bg",
-      "#e9eefc"
-    );
-  }
+    } catch (error) {
+        console.error("Erro fatal ao carregar dados iniciais da API:", error);
+        containerDisponiveis.innerHTML = `<p class="no-rooms">Erro ao carregar dados: ${error.message}.</p>`;
+        if (containerReservadas) containerReservadas.innerHTML = "";
+        salas = [];
+        return;
+    }
+    
+    // CRÍTICO: Renderiza em containers separados
+    renderSalas("listaSalas", "Disponível"); 
+    if (containerReservadas) {
+        renderSalas("salasReservadas", "Reservada"); 
+    }
 }
 
-// Filtro de salas
-function filterRooms(term, containerSelector) {
-  if (!term) {
-    document
-      .querySelectorAll(containerSelector + " .room-card")
-      .forEach((c) => (c.style.display = ""));
-    return;
-  }
-  document.querySelectorAll(containerSelector + " .room-card").forEach((c) => {
-    const txt = c.textContent.toLowerCase();
-    c.style.display = txt.includes(term) ? "" : "none";
-  });
-}
 
-document.addEventListener("DOMContentLoaded", () => {
-  const configButton = document.getElementById("configButton");
-  const configModal = document.getElementById("configModal");
-  const closeButton = document.querySelector(".close-config");
+// --- Lógica de Submissão da Reserva (CORRIGIDA E COMPLETA) ---
 
-  if (configButton && configModal && closeButton) {
-    configButton.addEventListener("click", () => {
-      configModal.style.display = "flex";
-      document.body.style.overflow = "hidden";
-    });
-
-    closeButton.addEventListener("click", () => {
-      configModal.style.display = "none";
-      document.body.style.overflow = "auto";
-    });
-
-    configModal.addEventListener("click", (e) => {
-      if (e.target === configModal) {
-        configModal.style.display = "none";
-        document.body.style.overflow = "auto";
-      }
-    });
-  }
-});
-
-// Modal de Reserva
-document.addEventListener("DOMContentLoaded", () => {
-  const reservaModal = document.getElementById("reservaModal");
-  const detalhesModal = document.getElementById("detalhesModal");
-  const closeReservaButtons = document.querySelectorAll(".close-reserva");
-  const reservaForm = document.getElementById("reservaForm");
-  let salaSelecionada = null;
-
-  // Abre o modal ao clicar em "Reservar"
-  document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("btn-reservar")) {
-      salaSelecionada =
-        e.target.closest(".room-card")?.querySelector(".card-header, h3")
-          ?.innerText || "Sala";
-      reservaModal.style.display = "flex";
-      document.body.style.overflow = "hidden";
-    } else if (e.target.classList.contains("btn-detalhes")) {
-      const salaNome =
-        e.target.closest(".room-card")?.querySelector(".card-header, h3")
-          ?.innerText || "Sala";
-      const reservante = "João Silva"; // Substitua por lógica real de fetch do DB se disponível
-      document.getElementById(
-        "detalhesInfo"
-      ).innerText = `Reservado por: ${reservante} para ${salaNome}`;
-      detalhesModal.style.display = "flex";
-      document.body.style.overflow = "hidden";
-    }
-  });
-
-  // Fecha modais ao clicar no X
-  closeReservaButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      reservaModal.style.display = "none";
-      detalhesModal.style.display = "none";
-      document.body.style.overflow = "auto";
-    });
-  });
-
-  // Fecha ao clicar fora
-  reservaModal.addEventListener("click", (e) => {
-    if (e.target === reservaModal) {
-      reservaModal.style.display = "none";
-      document.body.style.overflow = "auto";
-    }
-  });
-  detalhesModal.addEventListener("click", (e) => {
-    if (e.target === detalhesModal) {
-      detalhesModal.style.display = "none";
-      document.body.style.overflow = "auto";
-    }
-  });
-
-  // Submete o formulário de reserva
-  reservaForm.addEventListener("submit", (e) => {
+if (reservaForm) {
+  reservaForm.addEventListener("submit", async function (e) {
     e.preventDefault();
-    const solicitante = document.getElementById("solicitante").value.trim();
-    const data = document.getElementById("dataReserva").value;
-    const horario = document.getElementById("horarioReserva").value;
 
-    if (!data || !horario) {
-      alert("Por favor, preencha todos os campos antes de confirmar.");
+    // 1. Coleta e Valida ID da Sala
+    const salaID = this.dataset.salaId || salaSelecionadaId; 
+    
+    if (!salaID || isNaN(parseInt(salaID))) {
+        alert("Erro: ID da sala inválido ou ausente.");
+        return;
+    }
+
+    // 2. Coleta dados do formulário
+    const solicitante = $("#solicitante").value.trim();
+    const dataDisplay = $("#dataReserva").value; // Em DD/MM/YYYY (se for Flatpickr) ou YYYY-MM-DD
+    const horario = $("#horarioReserva").value; // Ex: "08:00 - 10:00"
+
+    if (!solicitante || !dataDisplay || !horario) {
+      alert("Por favor, preencha todos os campos do formulário de reserva.");
       return;
     }
 
-    // Extrai número da sala da string (ex.: "SALA 307" -> "307")
-    const numeroSala = salaSelecionada.match(/\d+/)[0];
-    // Atualiza o status da sala para "Reservada"
-    const salaIndex = salas.findIndex((s) => s.numero === numeroSala);
-    if (salaIndex !== -1) {
-      salas[salaIndex].status = "Reservada";
+    // 3. Converte a data para o formato seguro (YYYY-MM-DD)
+    const dataBackend = convertToISO(dataDisplay);
+    if (!dataBackend || dataBackend.split('-').length !== 3) {
+      alert("Erro de formato de data. Por favor, selecione uma data válida.");
+      return;
     }
+    
+    // 4. Extrai a hora de início para o backend
+    const horarioInicio = horario.split(' - ')[0]; // Pega "08:00" de "08:00 - 10:00"
 
-    // Adiciona a reserva
-    const [inicio, termino] = horario.split(" - ");
-    const dataCompleta = `${data} ${inicio}`;
-    reservas.push({
-      sala: salaSelecionada,
-      descricao: "Reserva", // Pode ser dinâmico via input futuro
-      inicio: dataCompleta,
-      termino: `${data} ${termino}`,
-      solicitante: "Usuário Atual", // Substitua por autenticação real
-    });
-
-    // Re-renderiza as seções
-    renderSalas("salasDisponiveis", "Disponível");
-    renderSalas("salasReservadas", "Reservada");
-    renderReservas("proximasReservas");
-
-    alert(
-      `✅ Reserva confirmada!\n${salaSelecionada}\nData: ${data}\nHorário: ${horario}`
-    );
-
-    reservaModal.style.display = "none";
-    document.body.style.overflow = "auto";
-    reservaForm.reset();
-  });
-});
-
-async function carregarSalasHomepage() {
-  const container = document.getElementById("listaSalas");
-  if (!container) return;
-
-  try {
-      const response = await fetch("/api/salas");
-      const data = await response.json();
-
-      if (!data.success || data.salas.length === 0) {
-          container.innerHTML = "<p>Nenhuma sala cadastrada.</p>";
-          return;
-      }
-
-      container.innerHTML = ""; // limpa conteúdo atual
-
-      data.salas.forEach(sala => {
-          const card = document.createElement("div");
-          card.classList.add("room-card");
-
-          card.innerHTML = `
-              <div class="card-header">SALA ${sala.numero}</div>
-              <p><strong>Andar:</strong> ${sala.andar}°</p>
-              <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
-              <p><strong>Bloco:</strong> ${sala.bloco}</p>
-          `;
-
-          container.appendChild(card);
+    const dadosReserva = {
+      salaID: parseInt(salaID), 
+      data: dataBackend, // YYYY-MM-DD
+      horario: horarioInicio, // HH:MM
+      periodo: horario.split(' - ')[0] + ' - ' + horario.split(' - ')[1], // Ex: '08:00 - 10:00'
+      solicitante: solicitante
+    };
+    
+    try {
+      // 5. REQUISIÇÃO PARA O BACKEND
+      const response = await fetch('/api/reservar', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosReserva)
       });
 
-  } catch (error) {
-      console.error("Erro ao carregar salas:", error);
-      container.innerHTML = "<p>Erro ao carregar salas.</p>";
-  }
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.message || `Status: ${response.status} ${response.statusText}`);
+      }
+
+      // SUCESSO
+      alert(`✅ Reserva confirmada! Sala ${salaID} reservada por ${solicitante}.`);
+      await carregarDadosIniciais(); // Recarrega os dados
+
+    } catch (error) {
+      console.error("Erro fatal na reserva:", error);
+      alert(`❌ Erro ao confirmar a reserva. Detalhes: ${error.message}.`);
+      return; 
+    }
+    
+    // FECHA MODAL E LIMPA
+    fecharModal(modalReserva);
+    reservaForm.reset();
+  });
 }
 
-carregarSalasHomepage();
+
+// --- Inicialização ---
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Definir data mínima como hoje (útil para input type="date")
+    if (dataInput && dataInput.type === 'date') {
+        const today = new Date().toISOString().split("T")[0];
+        dataInput.setAttribute("min", today);
+    }
+    
+    carregarDadosIniciais();
+
+    // Lógica para fechar modais
+    closeButtons.forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const modal = this.closest(".reserva-modal") || this.closest("#reservaModal") || this.closest("#detalhesModal");
+            fecharModal(modal);
+        });
+    });
+    
+    // Se você estiver usando Flatpickr (descomente e adicione o script do flatpickr no seu HTML)
+    // if (typeof flatpickr !== 'undefined') {
+    //     flatpickr("#dataReserva", {
+    //         dateFormat: "d/m/Y",
+    //         locale: "pt", 
+    //         minDate: "today"
+    //     });
+    // }
+    
+});

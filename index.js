@@ -76,54 +76,88 @@ app.post("/cadastro", async (req, res) => {
   });
 
 // NOVA ROTA: Rota para RESERVAR uma sala
+// ROTA CRÍTICA: Rota para RESERVAR uma sala
 app.post("/api/reservar", async (req, res) => {
-    const { salaID, data, horario, solicitante } = req.body;
+    // Recebe: salaID, data (AGORA SEMPRE YYYY-MM-DD), horario (HH:MM), solicitante (Nome)
+    const { salaID, data, horario, solicitante } = req.body; 
 
+    // Validação básica
     if (!salaID || !data || !horario || !solicitante) {
-        return res.status(400).json({ success: false, message: "Dados incompletos para a reserva." });
+        return res.status(400).json({ success: false, message: "Dados incompletos: salaID, data, horario ou solicitante ausentes." });
     }
 
     try {
-        // Início da transação (para garantir que ambas as ações sejam feitas ou nenhuma)
-        await executePromisified('START TRANSACTION');
-
-        // 1. INSERE A RESERVA na tabela de reservas (Você precisa ter uma tabela `reservas`)
-        // ATENÇÃO: Se sua tabela for diferente, ajuste o SQL!
-        const insertQuery = `
-            INSERT INTO reservas (salaID, data_reserva, horario_reserva, solicitante)
-            VALUES (?, ?, ?, ?)
-        `;
-        await executePromisified(insertQuery, [salaID, data, horario, solicitante]);
-
-        // 2. ATUALIZA O STATUS DA SALA para 'Reservada' na tabela 'salas'
-        // ATENÇÃO: Ajuste o campo e o nome da tabela se for diferente!
-        const updateQuery = `
-            UPDATE salas SET status = 'Reservada' WHERE id = ?
-        `;
-        await executePromisified(updateQuery, [salaID]);
+        // 1. PARSE E CONSTRÓI DATETIME DE FORMA SEGURA (Data já vem em YYYY-MM-DD)
+        // YYYY-MM-DD
+        const [year, month, day] = data.split('-').map(Number); 
+        // HH:MM
+        const [hour, minute] = horario.split(':').map(Number); 
         
-        // Finaliza a transação com sucesso
-        await executePromisified('COMMIT');
+        // Constrói o objeto Date no fuso horário LOCAL do servidor
+        const dataInicioObj = new Date(year, month - 1, day, hour, minute, 0); 
 
-        res.json({ success: true, message: "Reserva realizada e sala atualizada com sucesso." });
+        // CRÍTICO: Verifica se a data é válida
+        if (isNaN(dataInicioObj.getTime())) {
+             console.error(`Erro ao criar Date object: data=${data}, horario=${horario}`);
+             return res.status(400).json({ success: false, message: "Valor de Data ou Horário inválido." });
+        }
+
+        // Formata dataInicio para o formato SQL DATETIME (YYYY-MM-DD HH:MM:SS)
+        const pad = (num) => String(num).padStart(2, '0');
+        const dataInicioStr = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:00`;
+
+
+        // 2. CALCULA dataTermino (2 horas depois, assumindo que seus períodos são de 2h, e.g., 08:00 - 10:00)
+        // OBS: Seus períodos de horário no salas.html são de 2 horas (e.g., 08:00 - 10:00), por isso ajustamos para +2 horas.
+        const dataTerminoObj = new Date(dataInicioObj.getTime()); 
+        dataTerminoObj.setHours(dataTerminoObj.getHours() + 2); // Adiciona 2 horas
+        
+        // Formata dataTermino para SQL
+        const endYear = dataTerminoObj.getFullYear();
+        const endMonth = pad(dataTerminoObj.getMonth() + 1); 
+        const endDay = pad(dataTerminoObj.getDate());
+        const endHour = pad(dataTerminoObj.getHours());
+        const endMinute = pad(dataTerminoObj.getMinutes());
+
+        const dataTerminoStr = `${endYear}-${endMonth}-${endDay} ${endHour}:${endMinute}:00`;
+        
+        // 3. VERIFICA DISPONIBILIDADE
+        // Usamos o BD de salas e reserva fornecido anteriormente
+        const checkQuery = `
+            SELECT reservaID FROM reserva
+            WHERE salasID = ? 
+            AND statusReserva = 'Reservada'
+            AND (
+                (? BETWEEN dataInicio AND dataTermino) OR 
+                (? BETWEEN dataInicio AND dataTermino) OR
+                (dataInicio BETWEEN ? AND ?)
+            )
+        `;
+        const existingReservations = await executePromisified(checkQuery, [salaID, dataInicioStr, dataTerminoStr, dataInicioStr, dataTerminoStr]);
+
+        if (existingReservations.length > 0) {
+            return res.status(409).json({ success: false, message: "Sala já reservada para este horário. Conflito detectado." });
+        }
+        
+        // 4. INSERE O NOME DO SOLICITANTE 
+        const solicitanteQuery = `
+            INSERT INTO solicitante (nome, salasID) VALUES (?, ?)
+        `;
+        await executePromisified(solicitanteQuery, [solicitante, salaID]);
+        
+        // 5. INSERE A RESERVA
+        // O campo 'periodo' (BD) será usado com um valor placeholder ('Manhã').
+        const insertQuery = `
+            INSERT INTO reserva (statusReserva, periodo, salasID, dataInicio, dataTermino)
+            VALUES (?, 'Manhã', ?, ?, ?)
+        `;
+        await executePromisified(insertQuery, ['Reservada', salaID, dataInicioStr, dataTerminoStr]);
+        
+        res.json({ success: true, message: "Reserva realizada com sucesso." });
 
     } catch (erro) {
-        // Em caso de erro, desfaz as ações da transação
-        await executePromisified('ROLLBACK');
         console.error('Erro ao reservar sala:', erro);
-        res.status(500).json({ success: false, message: 'Erro interno ao processar a reserva.' });
-    }
-});
-
-app.get('/arquivos', async (req, res) => {
-    try {
-        const query = 'SELECT id, nome, tipo_mime, data_upload FROM arquivos ORDER BY data_upload DESC';
-        const arquivos = await executePromisified(query);
-
-        res.json({ success: true, arquivos });
-    } catch (erro) {
-        console.error('Erro ao listar arquivos:', erro);
-        res.status(500).json({ success: false, message: 'Erro interno ao listar arquivos.' });
+        res.status(500).json({ success: false, message: `Erro interno ao processar a reserva: ${erro.sqlMessage || erro.message}` });
     }
 });
 
@@ -226,14 +260,49 @@ app.get('/', (req, res) => {
 });
 
 // Rota para listar salas na página inicial
+// Rota para listar salas na página inicial
+// Rota para listar salas na página inicial (CORRIGIDA)
 app.get("/api/salas", async (req, res) => {
     try {
-        const query = "SELECT * FROM salas ORDER BY numero ASC";
+        // Query AJUSTADA para fazer um JOIN com reserva e verificar status ATUALMENTE
+        const query = `
+            SELECT 
+                s.salasID AS id,
+                s.numero,
+                s.andar,
+                s.bloco,
+                s.capacidade,
+                -- COALESCE garante que se não houver reserva, o período será 'Não Reservado'
+                COALESCE(r.periodo, 'Não Reservado') AS periodo,
+                -- CRÍTICO: Se houver um registro de reserva ATIVA agora, o status é 'Reservada'.
+                CASE 
+                    WHEN r.reservaID IS NOT NULL AND r.statusReserva = 'Reservada' 
+                    THEN 'Reservada' 
+                    ELSE 'Disponível' 
+                END AS status
+            FROM salas s
+            LEFT JOIN reserva r ON s.salasID = r.salasID 
+                -- CRÍTICO: Filtra apenas reservas ATIVAS no momento
+                AND NOW() BETWEEN r.dataInicio AND r.dataTermino
+            ORDER BY s.numero ASC
+        `;
         const resultados = await executePromisified(query);
-        res.json({ success: true, salas: resultados });
+        
+        // Mapeia os resultados para o formato esperado pelo frontend
+        const salasFormatadas = resultados.map(sala => ({
+            id: sala.id,
+            numero: sala.numero,
+            andar: sala.andar,
+            capacidade: sala.capacidade,
+            bloco: sala.bloco,
+            status: sala.status, // 'Reservada' ou 'Disponível'
+            periodo: sala.periodo // Período reservado (se houver)
+        }));
+        
+        res.json({ success: true, salas: salasFormatadas });
     } catch (err) {
         console.error("Erro ao buscar salas:", err);
-        res.status(500).json({ success: false, message: "Erro ao carregar salas." });
+        res.status(500).json({ success: false, message: "Erro interno ao carregar salas. Verifique o terminal do servidor." });
     }
 });
 
