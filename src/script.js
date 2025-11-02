@@ -145,10 +145,19 @@ const capacidadeTotal = salas.reduce((sum, s) => sum + (parseInt(s.capacidade) |
 const reservasSemana = salasReservadas; // Se você tiver API de reservas da semana, trocamos depois.
 
 // Atualiza no DOM
-$("#countDisponiveis").textContent = `${salasDisponiveis} Salas`;
-$("#countReservadas").textContent = `${salasReservadas} Salas`;
-$("#capacidadeTotal").textContent = `${capacidadeTotal} Alunos`;
-$("#reservasSemana").textContent = `${reservasSemana} Agendamentos`;
+const elDisponiveis   = document.getElementById("countDisponiveis");
+const elReservadas    = document.getElementById("countReservadas");
+const elCapacidade    = document.getElementById("capacidadeTotal");
+const elSemana        = document.getElementById("reservasSemana");
+
+// Se a página não tiver os cards (ex: salas.html), não faz nada → evita erro
+if (elDisponiveis && elReservadas && elCapacidade && elSemana) {
+    elDisponiveis.textContent = `${salasDisponiveis} Salas`;
+    elReservadas.textContent = `${salasReservadas} Salas`;
+    elCapacidade.textContent = `${capacidadeTotal} Alunos`;
+    elSemana.textContent = `${reservasSemana} Agendamentos`;
+}
+
 
     } catch (error) {
         console.error("Erro fatal ao carregar dados iniciais da API:", error);
@@ -159,10 +168,11 @@ $("#reservasSemana").textContent = `${reservasSemana} Agendamentos`;
     }
     
     // CRÍTICO: Renderiza em containers separados
-    renderSalas("listaSalas", "Disponível"); 
-    if (containerReservadas) {
-        renderSalas("salasReservadas", "Reservada"); 
-    }
+    renderSalas("listaSalas", "Disponível");
+
+if (containerReservadas) {
+    renderSalas("salasReservadas", "Reservada");
+}
 }
 
 
@@ -249,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     carregarDadosIniciais();
-
+    carregarProximasReservas();
     // Lógica para fechar modais
     closeButtons.forEach((btn) => {
         btn.addEventListener("click", function () {
@@ -257,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fecharModal(modal);
         });
     });
-    
+  
     // Se você estiver usando Flatpickr (descomente e adicione o script do flatpickr no seu HTML)
     // if (typeof flatpickr !== 'undefined') {
     //     flatpickr("#dataReserva", {
@@ -268,3 +278,38 @@ document.addEventListener("DOMContentLoaded", () => {
     // }
     
 });
+
+async function carregarProximasReservas() {
+  const container = document.getElementById("listaProximasReservas");
+
+  if (!container) return;
+
+  container.innerHTML = `<p class="loading-message">Carregando reservas...</p>`;
+
+  try {
+    const response = await fetch("/api/proximas-reservas");
+    const data = await response.json();
+
+    if (!data.success) throw new Error(data.message);
+
+    if (data.reservas.length === 0) {
+      container.innerHTML = `<p class="no-rooms">Nenhuma reserva futura.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    data.reservas.forEach(r => {
+      container.innerHTML += `
+        <div class="reserva-card">
+          <h4>Sala ${r.numero} - Bloco ${r.bloco}</h4>
+          <p><strong>Data:</strong> ${r.data}</p>
+          <p><strong>Horário:</strong> ${r.horario}</p>
+          <p><strong>Responsável:</strong> ${r.solicitante}</p>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    container.innerHTML = `<p class="no-rooms">Erro ao carregar reservas.</p>`;
+  }
+}
