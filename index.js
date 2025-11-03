@@ -4,7 +4,7 @@ const path = require('path');
 const dbConnection = require('./models/db');
 const util = require('util');
 const query = util.promisify(dbConnection.query).bind(dbConnection); 
-
+let existingReservations = [];
 const app = express();
 const PORT = 8080; 
 
@@ -113,26 +113,29 @@ app.post("/cadastro", async (req, res) => {
 
         const dataTerminoStr = `${endYear}-${endMonth}-${endDay} ${endHour}:${endMinute}:00`;
         
-        const checkQuery = `
-            SELECT reservaID FROM reserva
-            WHERE salasID = ? 
-            AND statusReserva = 'Reservada'
-            AND (
-                (? BETWEEN dataInicio AND dataTermino) OR 
-                (? BETWEEN dataInicio AND dataTermino) OR
-                (dataInicio BETWEEN ? AND ?)
-            )
-        `;
-        const existingReservations = await executePromisified(checkQuery, [salaID, dataInicioStr, dataTerminoStr, dataInicioStr, dataTerminoStr]);
+        const sql = `
+  SELECT reservaID
+  FROM reserva
+  WHERE salasID = ?
+    AND statusReserva = 'Reservada'
+    AND NOT (dataTermino <= ? OR dataInicio >= ?)
+`;
+const params = [salaID, dataInicioStr, dataTerminoStr];
+
+const [rows] = await query(sql, params);
 
         if (existingReservations.length > 0) {
             return res.status(409).json({ success: false, message: "Sala já reservada para este horário. Conflito detectado." });
         }
         
-        const solicitanteQuery = `
-            INSERT INTO solicitante (nome, salasID) VALUES (?, ?)
-        `;
-        await executePromisified(solicitanteQuery, [solicitante, salaID]);
+         const resultSolic = await query("INSERT INTO solicitante (nome) VALUES (?)", [solicitante]);
+         const solicitanteID = resultSolic.insertId; 
+
+
+          await query(
+      "INSERT INTO reserva (salasID, dataInicio, periodo, solicitanteID) VALUES (?, ?, ?, ?)",
+      [salaID, data, horario, solicitanteID]
+    );
     
 	        const insertQuery = `
 	            INSERT INTO reserva (statusReserva, periodo, salasID, dataInicio, dataTermino)
@@ -145,6 +148,45 @@ app.post("/cadastro", async (req, res) => {
     } catch (erro) {
         console.error('Erro ao reservar sala:', erro);
         res.status(500).json({ success: false, message: `Erro interno ao processar a reserva: ${erro.sqlMessage || erro.message}` });
+    }
+});
+
+app.delete("/api/salas/:id", async (req, res) => {
+    const salaID = req.params.id;
+    try {
+        await executePromisified("DELETE FROM reserva WHERE salasID = ?", [salaID]);
+        
+        // Em seguida, exclui a sala
+        const query = "DELETE FROM salas WHERE salasID = ?";
+        const result = await executePromisified(query, [salaID]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Sala não encontrada." });
+        }
+
+        res.json({ success: true, message: `Sala ID ${salaID} e suas reservas excluídas com sucesso.` });
+    } catch (err) {
+        console.error("Erro ao excluir sala:", err);
+        res.status(500).json({ success: false, message: "Erro interno ao excluir sala." });
+    }
+});
+
+app.put("/api/reservas/cancelar/:id", async (req, res) => {
+    const reservaID = req.params.id;
+    try {
+        // Opção mais simples: EXCLUIR a reserva. 
+        // Isso garante que a próxima busca por salas a mostrará como 'Disponível'.
+        const query = "DELETE FROM reserva WHERE reservaID = ?";
+        const result = await executePromisified(query, [reservaID]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Reserva não encontrada." });
+        }
+
+        res.json({ success: true, message: `Reserva ID ${reservaID} cancelada com sucesso.` });
+    } catch (err) {
+        console.error("Erro ao cancelar reserva:", err);
+        res.status(500).json({ success: false, message: "Erro interno ao cancelar reserva." });
     }
 });
 
@@ -248,16 +290,25 @@ app.get('/', (req, res) => {
 
 app.get("/api/proximas-reservas", async (req, res) => {
   try {
-    const querySql = `
-      SELECT r.reservaID, r.data, r.horario, r.solicitante, 
-             s.salasID, s.numero, s.bloco, s.andar, s.capacidade
-      FROM reservas r
-      JOIN salas s ON r.salaID = s.salasID
-      WHERE r.data >= CURDATE()
-      ORDER BY r.data ASC, r.horario ASC
+    const sql = `
+      SELECT 
+        r.reservaID,
+        r.dataInicio,
+        r.periodo,
+        s.salasID,
+        s.numero,
+        s.bloco,
+        s.andar,
+        s.capacidade,
+        sol.Nome AS solicitante
+      FROM reserva r
+      JOIN salas s ON r.salasID = s.salasID
+      JOIN solicitante sol ON r.solicitanteID = sol.Solicitante
+      WHERE r.dataInicio >= CURDATE()
+      ORDER BY r.dataInicio ASC;
     `;
-    
-    const reservas = await query(querySql);
+
+    const reservas = await query(sql);
     res.json({ success: true, reservas });
 
   } catch (err) {
@@ -275,7 +326,7 @@ app.get("/api/salas", async (req, res) => {
                 s.numero,
                 s.andar,
                 s.bloco,
-                s.capacidade, /* Garante que 'capacidade' é selecionada */
+                s.capacidade,
                 COALESCE(r.periodo, 'Indefinido') AS periodo,
                 CASE 
                     WHEN r.reservaID IS NOT NULL 

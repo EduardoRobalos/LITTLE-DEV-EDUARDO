@@ -712,3 +712,58 @@ body.dark-mode .btn-reservar-confirmar:hover {
   }
 }
 
+.reservas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.reserva-card {
+    display: flex;
+    align-items: center;
+    background: #111;
+    border-radius: 14px;
+    padding: 14px 18px;
+    border: 1px solid #2b2b2b;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    transition: 0.2s;
+}
+
+.reserva-card:hover {
+    transform: translateY(-2px);
+    border-color: #6a4dff;
+}
+
+.reserva-data {
+    background: #6a4dff;
+    color: white;
+    width: 60px;
+    text-align: center;
+    border-radius: 10px;
+    padding: 6px 0;
+    margin-right: 18px;
+}
+
+.reserva-data .dia {
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 20px;
+}
+
+.reserva-data .mes {
+    font-size: 12px;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+.reserva-info h4 {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.reserva-info p {
+    font-size: 14px;
+    margin: 2px 0;
+    color: #ccc;
+}
