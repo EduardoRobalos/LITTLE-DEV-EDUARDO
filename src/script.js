@@ -93,7 +93,7 @@ function renderSalas(containerId, statusFilter) {
             // Botão/Ícone para Excluir Sala (para salas no container 'Salas Disponíveis')
             // Requer a biblioteca Font Awesome linkada no salas.html
             actionButtonsHTML = `
-                <button class="icon-button btn-excluir-sala" title="Excluir Sala" data-sala-id="${sala.id}">
+                <button class="btn-excluir" title="Excluir Sala" data-sala-id="${sala.id}">
                     <i class="fas fa-trash-alt"></i>
                 </button>
             `;
@@ -128,7 +128,7 @@ function renderSalas(containerId, statusFilter) {
     });
 
     // 3. Adiciona Listener para Excluir Sala
-    container.querySelectorAll(".btn-excluir-sala").forEach((btn) => {
+    container.querySelectorAll(".btn-excluir").forEach((btn) => {
         btn.addEventListener("click", function () {
             const salaId = this.dataset.salaId;
             if (confirm(`Tem certeza que deseja EXCLUIR permanentemente a Sala ID ${salaId}?`)) {
@@ -534,6 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const configButtons = document.querySelectorAll("#btnConfig");
   const modal = $("#configModal");
   const closeBtn = $("#closeConfig");
+  configModal.removeAttribute("aria-hidden");
 
   // open handlers
   configButtons.forEach((btn) => {
@@ -601,3 +602,41 @@ function applyTheme(mode) {
       "#e9eefc"
     );
   }}})});
+
+  const btnExportarReservas = document.getElementById("btnExportarReservar"); // Corri o ID aqui
+
+  // Função de exportação
+  function exportarReservasParaPDF() {
+      // 1. Clonar o elemento com as reservas para gerar o PDF
+      const content = document.getElementById("listaReservadas"); // CRÍTICO: Substitua pelo ID REAL do container das suas salas reservadas
+      if (!content) {
+          alert("Erro: Container de reservas (ID: listaReservadas) não encontrado.");
+          return;
+      }
+  
+      // Clonar o conteúdo para aplicar estilos de impressão sem afetar a tela
+      const clone = content.cloneNode(true);
+      clone.classList.add('pdf-export'); // Adiciona uma classe para estilos específicos de PDF/Impressão
+  
+      // 2. Configurações do PDF (Tamanho A4, nome do arquivo, margens)
+      const options = {
+          margin: [10, 10, 10, 10], // Margens: Top, Left, Bottom, Right
+          filename: 'reservas_salas.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 }, // Aumenta a resolução para maior qualidade
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+  
+      // 3. Gerar e salvar o PDF
+      html2pdf().from(clone).set(options).save();
+  }
+  
+  // Inicialização: Vincular o evento ao botão
+  document.addEventListener("DOMContentLoaded", () => {
+      // ... Seu código de inicialização (carregarDadosIniciais, listeners de fechar modal) ...
+  
+      const btnExport = document.getElementById("btnExportarReservas");
+      if (btnExport) {
+          btnExport.addEventListener("click", exportarReservasParaPDF);
+      }
+  });

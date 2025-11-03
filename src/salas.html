@@ -5,18 +5,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Salas - Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
-
+  <link rel="stylesheet" href="style.css" />
     <main class="main-content">
       <header class="top-bar">
         <nav class="main-nav">
           <a href="index.html" class="nav-link">Página Inicial</a>
           <a href="/salas" class="nav-link active">Salas</a>
           <a href="/cadastro" class="nav-link">Cadastro</a>
-          <a href="relatorios.html" class="nav-link">Relatórios</a>
         </nav>
         <div class="user-actions">
           <button class="icon-button" title="Notificações">
@@ -85,6 +83,7 @@
           </section>
           
           <section class="rooms-section">
+            <button id="exportarPDF" class="btn-export-pdf">Exportar Relatório em PDF</button>
             <h2>Salas Reservadas</h2>
             <div id="salasReservadas" class="rooms-grid"></div>
           </section>
@@ -158,15 +157,7 @@
     </div>
   </div>
 
-  <!-- MODAL DE DETALHES (novo, para "Ver mais") -->
-  <div id="detalhesModal" class="reserva-modal">
-    <div class="reserva-box">
-      <button class="close-reserva">&times;</button>
-      <h2>Detalhes da Reserva</h2>
-      <p id="detalhesInfo"></p>
-    </div>
-  </div>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

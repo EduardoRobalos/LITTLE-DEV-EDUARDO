@@ -215,6 +215,62 @@ app.get('/arquivo/:id', async (req, res) => {
     }
 });
 
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+
+app.get("/api/exportar-reservas-pdf", async (req, res) => {
+  try {
+    const querySql = `
+      SELECT r.reservaID, r.dataInicio, r.periodo,
+             s.numero, sol.nome AS solicitante
+      FROM reserva r
+      JOIN salas s ON r.salasID = s.salasID
+      JOIN solicitante sol ON r.solicitanteID = sol.solicitanteID
+      ORDER BY r.dataInicio ASC;
+    `;
+
+    const registros = await query(querySql);
+
+    const doc = new PDFDocument({ margin: 40 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="relatorio_reservas.pdf"');
+    doc.pipe(res);
+
+    // HEADER AZUL
+    doc
+      .rect(0, 0, 600, 70)
+      .fill("#1c2a5f");
+    doc
+      .fill("#ffffff")
+      .fontSize(22)
+      .text("Relatório de Reservas", 40, 22);
+
+    doc.moveDown(2);
+
+    registros.forEach((r) => {
+      doc
+        .fill("#1c2a5f")
+        .fontSize(14)
+        .text(`Sala ${r.numero}`);
+
+      doc
+        .fill("#000")
+        .fontSize(12)
+        .text(`Data: ${new Date(r.dataInicio).toLocaleDateString("pt-BR")}`);
+      doc.text(`Período: ${r.periodo}`);
+      doc.text(`Solicitante: ${r.solicitante}`);
+      doc.moveDown();
+    });
+
+    doc.end();
+
+  } catch (err) {
+    console.error("Erro ao gerar PDF:", err);
+    res.status(500).json({ success: false, message: "Erro ao gerar PDF." });
+  }
+});
+
+
 app.get('/rooms', async (req, res) => {
     try {
         // Esta consulta busca todos os detalhes das salas e, se houver, a última reserva.

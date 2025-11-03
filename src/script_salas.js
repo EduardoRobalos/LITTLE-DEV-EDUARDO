@@ -260,3 +260,37 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   })})
+
+  // Adicione esta função em algum lugar no topo do seu script (ex: script.js)
+function showToast(message, type = 'success', duration = 3000) {
+  // 1. Cria o elemento
+  let toast = document.getElementById('app-toast');
+  if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'app-toast';
+      toast.classList.add('toast-notification');
+      document.body.appendChild(toast);
+  }
+
+  // 2. Define o ícone e a cor (baseado no 'type')
+  let icon = '';
+  if (type === 'success') {
+      icon = '<i class="fas fa-check-circle"></i>';
+      toast.style.backgroundColor = '#4CAF50';
+  } else if (type === 'error') {
+      icon = '<i class="fas fa-exclamation-triangle"></i>';
+      toast.style.backgroundColor = '#f44336';
+  } else { // info
+      icon = '<i class="fas fa-info-circle"></i>';
+      toast.style.backgroundColor = '#2196F3';
+  }
+
+  // 3. Define o conteúdo e a classe 'show'
+  toast.innerHTML = icon + '<span>' + message + '</span>';
+  toast.classList.add('show');
+
+  // 4. Remove a notificação após o tempo definido
+  setTimeout(() => {
+      toast.classList.remove('show');
+  }, duration);
+}
