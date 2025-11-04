@@ -5,18 +5,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Salas - Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
-
+  <link rel="stylesheet" href="style.css" />
     <main class="main-content">
       <header class="top-bar">
         <nav class="main-nav">
           <a href="index.html" class="nav-link">Página Inicial</a>
           <a href="/salas" class="nav-link active">Salas</a>
           <a href="/cadastro" class="nav-link">Cadastro</a>
-          <a href="relatorios.html" class="nav-link">Relatórios</a>
         </nav>
         <div class="user-actions">
           <button class="icon-button" title="Notificações">
@@ -77,7 +75,6 @@
           </div>
         </section>
       
-        <!-- Seção de salas disponíveis -->
         <section class="rooms-section">
           <section class="rooms-section">
             <h2>Salas Disponíveis</h2>
@@ -85,27 +82,13 @@
           </section>
           
           <section class="rooms-section">
+            <button id="exportarPDF" class="btn exportar">
+  <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+</button>
             <h2>Salas Reservadas</h2>
             <div id="salasReservadas" class="rooms-grid"></div>
           </section>
-
-        <!-- Próximas reservas -->
-        <section class="reports-summary">
-          <h2>Próximas Reservas</h2>
-          <div class="reservations-grid">
-            <div class="reservation-card">
-              <i class="fas fa-calendar-alt icon-left"></i>
-              <div class="info">
-                <p><strong>SALA 304 - Design Thinking</strong></p>
-                <p>Início: 08/03 às 14:00 | Término: 08/03 às 17:00</p>
-                <p>Solicitante: João Silva</p>
-              </div>
-              <span class="status reserved">RESERVADA</span>
-            </div>
-          </div>
-        </section>
       
-  <!-- modal (mesmo do index) -->
   <div id="configModal" class="config-modal" aria-hidden="true">
     <div class="config-box" role="dialog" aria-modal="true" aria-labelledby="configTitle">
       <button class="close-config" id="closeConfig" aria-label="Fechar"><i class="fas fa-times"></i></button>
@@ -143,7 +126,6 @@
     </div>
   </div>
 
-  <!-- MODAL DE RESERVA (novo, similar ao de configurações) -->
   <div id="reservaModal" class="reserva-modal">
     <div class="reserva-box">
       <button class="close-reserva">&times;</button>
@@ -174,15 +156,7 @@
     </div>
   </div>
 
-  <!-- MODAL DE DETALHES (novo, para "Ver mais") -->
-  <div id="detalhesModal" class="reserva-modal">
-    <div class="reserva-box">
-      <button class="close-reserva">&times;</button>
-      <h2>Detalhes da Reserva</h2>
-      <p id="detalhesInfo"></p>
-    </div>
-  </div>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

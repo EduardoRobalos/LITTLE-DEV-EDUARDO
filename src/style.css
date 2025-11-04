@@ -712,3 +712,159 @@ body.dark-mode .btn-reservar-confirmar:hover {
   }
 }
 
+.reservas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.reserva-card {
+    display: flex;
+    align-items: center;
+    background: #111;
+    border-radius: 14px;
+    padding: 14px 18px;
+    border: 1px solid #2b2b2b;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    transition: 0.2s;
+}
+
+.reserva-card:hover {
+    transform: translateY(-2px);
+    border-color: #6a4dff;
+}
+
+.reserva-data {
+    background: #6a4dff;
+    color: white;
+    width: 60px;
+    text-align: center;
+    border-radius: 10px;
+    padding: 6px 0;
+    margin-right: 18px;
+}
+
+.reserva-data .dia {
+    font-size: 20px;
+    font-weight: bold;
+    line-height: 20px;
+}
+
+.reserva-data .mes {
+    font-size: 12px;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+.reserva-info h4 {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+
+.reserva-info p {
+    font-size: 14px;
+    margin: 2px 0;
+    color: #ccc;
+}
+
+.card-carousel-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 25px 0;
+  width: 100%;
+}
+
+.card-carousel {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 10px;
+  width: 80%;
+}
+
+.card-carousel::-webkit-scrollbar {
+  height: 8px;
+}
+.card-carousel::-webkit-scrollbar-thumb {
+  background: #2945ff;
+  border-radius: 4px;
+}
+
+.report-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  width: 260px;
+  padding: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.report-card .tag {
+  font-size: 12px;
+  background: #d9e4ff;
+  color: #2945ff;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.report-card .btn-ver {
+  margin-top: 12px;
+  background: #2945ff;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: .2s;
+}
+.report-card .btn-ver:hover { opacity: .8; }
+
+.carousel-btn {
+  background: transparent;
+  border: none;
+  color: #2945ff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.btn-excluir {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px; 
+  transition: color 0.2s ease-in-out; 
+}
+
+
+.btn-excluir i.fas.fa-trash-alt {
+  color: #dc2626; 
+  font-size: 1.1em; 
+}
+
+.btn-excluir:hover i.fas.fa-trash-alt {
+  color: #b91c1c; 
+}
+
+
+body.dark-mode .btn-excluir i.fas.fa-trash-alt {
+  color: #ef4444;
+}
+
+.btn-export-pdf {
+  background-color: #1c2a5f;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.btn-export-pdf:hover {
+  background-color: #12204c;
+}

@@ -4,7 +4,7 @@ const path = require('path');
 const dbConnection = require('./models/db');
 const util = require('util');
 const query = util.promisify(dbConnection.query).bind(dbConnection); 
-
+let existingReservations = [];
 const app = express();
 const PORT = 8080; 
 
@@ -75,89 +75,101 @@ app.post("/cadastro", async (req, res) => {
     }
   });
 
-// NOVA ROTA: Rota para RESERVAR uma sala
-// ROTA CRÍTICA: Rota para RESERVAR uma sala
-app.post("/api/reservar", async (req, res) => {
-    // Recebe: salaID, data (AGORA SEMPRE YYYY-MM-DD), horario (HH:MM), solicitante (Nome)
-    const { salaID, data, horario, solicitante } = req.body; 
-
-    // Validação básica
+  app.post("/api/reservar", async (req, res) => {
+    const { salaID, data, horario, solicitante, periodo } = req.body;
+  
     if (!salaID || !data || !horario || !solicitante) {
-        return res.status(400).json({ success: false, message: "Dados incompletos: salaID, data, horario ou solicitante ausentes." });
+      return res.status(400).json({ success: false, message: "Dados incompletos para reserva." });
     }
-
+  
     try {
-        // 1. PARSE E CONSTRÓI DATETIME DE FORMA SEGURA (Data já vem em YYYY-MM-DD)
-        // YYYY-MM-DD
-        const [year, month, day] = data.split('-').map(Number); 
-        // HH:MM
-        const [hour, minute] = horario.split(':').map(Number); 
-        
-        // Constrói o objeto Date no fuso horário LOCAL do servidor
-        const dataInicioObj = new Date(year, month - 1, day, hour, minute, 0); 
+      // data: "YYYY-MM-DD", horario: "HH:MM" (pegamos hora de início)
+      const [year, month, day] = data.split("-").map(Number);
+      const [hour, minute] = horario.split(":").map(Number);
+      const inicio = new Date(year, month - 1, day, hour, minute, 0);
+      if (isNaN(inicio.getTime())) return res.status(400).json({ success: false, message: "Data ou horário inválido." });
+  
+      const pad = (n) => String(n).padStart(2, "0");
+      const dataInicioStr = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:00`;
+  
+      // Termino = início + 2 horas (ou use periodo para definir)
+      const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
+      const dataTerminoStr = `${fim.getFullYear()}-${pad(fim.getMonth() + 1)}-${pad(fim.getDate())} ${pad(fim.getHours())}:${pad(fim.getMinutes())}:00`;
+  
+      // Verifica conflito (mesma sala, intervalo sobreposto)
+      const conflitoSQL = `
+        SELECT reservaID FROM reserva
+        WHERE salasID = ?
+          AND statusReserva = 'Reservada'
+          AND NOT (dataTermino <= ? OR dataInicio >= ?)
+      `;
+      const conflito = await query(conflitoSQL, [salaID, dataInicioStr, dataTerminoStr]);
+  
+      if (conflito.length > 0) {
+        return res.status(409).json({ success: false, message: "⛔ Sala já reservada nesse horário." });
+      }
+  
+      // Cadastra solicitante
+      const resultSolic = await query("INSERT INTO solicitante (nome) VALUES (?)", [solicitante]);
+      const solicitanteID = resultSolic.insertId;
+  
+      // Insere reserva (guarda solicitanteID)
+      const insertSQL = `
+        INSERT INTO reserva (salasID, dataInicio, dataTermino, periodo, statusReserva, solicitanteID)
+        VALUES (?, ?, ?, ?, 'Reservada', ?)
+      `;
+      await query(insertSQL, [salaID, dataInicioStr, dataTerminoStr, periodo, solicitanteID]);
+  
+      res.json({ success: true, message: "✅ Sala reservada com sucesso!" });
+  
+    } catch (err) {
+      console.error("Erro ao reservar sala:", err);
+      res.status(500).json({ success: false, message: "Erro interno ao reservar sala." });
+    }
+  });
+  
+  app.get("/api/proximas-reservas", async (req, res) => {
+    try {
+      const sql = `
+        SELECT 
+          r.reservaID,
+          r.dataInicio,
+          r.dataTermino,
+          r.periodo,
+          s.numero,
+          s.bloco,
+          s.andar,
+          s.capacidade,
+          sol.nome AS solicitante
+        FROM reserva r
+        JOIN salas s ON r.salasID = s.salasID
+        LEFT JOIN solicitante sol ON r.solicitanteID = sol.solicitanteID
+        WHERE r.statusReserva = 'Reservada'
+          AND r.dataInicio >= NOW() - INTERVAL 1 HOUR
+        ORDER BY r.dataInicio ASC;
+      `;
+      const reservas = await query(sql);
+      res.json({ success: true, reservas });
+    } catch (err) {
+      console.error("Erro ao buscar próximas reservas:", err);
+      res.status(500).json({ success: false, message: "Erro ao buscar reservas." });
+    }
+  });
 
-        // CRÍTICO: Verifica se a data é válida
-        if (isNaN(dataInicioObj.getTime())) {
-             console.error(`Erro ao criar Date object: data=${data}, horario=${horario}`);
-             return res.status(400).json({ success: false, message: "Valor de Data ou Horário inválido." });
+app.put("/api/reservas/cancelar/:id", async (req, res) => {
+    const reservaID = req.params.id;
+    try {
+        const query = "DELETE FROM reserva WHERE reservaID = ?";
+        const result = await executePromisified(query, [reservaID]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: "Reserva não encontrada." });
         }
 
-        // Formata dataInicio para o formato SQL DATETIME (YYYY-MM-DD HH:MM:SS)
-        const pad = (num) => String(num).padStart(2, '0');
-        const dataInicioStr = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:00`;
-
-
-        // 2. CALCULA dataTermino (2 horas depois, assumindo que seus períodos são de 2h, e.g., 08:00 - 10:00)
-        // OBS: Seus períodos de horário no salas.html são de 2 horas (e.g., 08:00 - 10:00), por isso ajustamos para +2 horas.
-        const dataTerminoObj = new Date(dataInicioObj.getTime()); 
-        dataTerminoObj.setHours(dataTerminoObj.getHours() + 2); // Adiciona 2 horas
-        
-        // Formata dataTermino para SQL
-        const endYear = dataTerminoObj.getFullYear();
-        const endMonth = pad(dataTerminoObj.getMonth() + 1); 
-        const endDay = pad(dataTerminoObj.getDate());
-        const endHour = pad(dataTerminoObj.getHours());
-        const endMinute = pad(dataTerminoObj.getMinutes());
-
-        const dataTerminoStr = `${endYear}-${endMonth}-${endDay} ${endHour}:${endMinute}:00`;
-        
-        // 3. VERIFICA DISPONIBILIDADE
-        // Usamos o BD de salas e reserva fornecido anteriormente
-        const checkQuery = `
-            SELECT reservaID FROM reserva
-            WHERE salasID = ? 
-            AND statusReserva = 'Reservada'
-            AND (
-                (? BETWEEN dataInicio AND dataTermino) OR 
-                (? BETWEEN dataInicio AND dataTermino) OR
-                (dataInicio BETWEEN ? AND ?)
-            )
-        `;
-        const existingReservations = await executePromisified(checkQuery, [salaID, dataInicioStr, dataTerminoStr, dataInicioStr, dataTerminoStr]);
-
-        if (existingReservations.length > 0) {
-            return res.status(409).json({ success: false, message: "Sala já reservada para este horário. Conflito detectado." });
-        }
-        
-        // 4. INSERE O NOME DO SOLICITANTE 
-        const solicitanteQuery = `
-            INSERT INTO solicitante (nome, salasID) VALUES (?, ?)
-        `;
-        await executePromisified(solicitanteQuery, [solicitante, salaID]);
-        
-        // 5. INSERE A RESERVA
-        // O campo 'periodo' (BD) será usado com um valor placeholder ('Manhã').
-        const insertQuery = `
-            INSERT INTO reserva (statusReserva, periodo, salasID, dataInicio, dataTermino)
-            VALUES (?, 'Manhã', ?, ?, ?)
-        `;
-        await executePromisified(insertQuery, ['Reservada', salaID, dataInicioStr, dataTerminoStr]);
-        
-        res.json({ success: true, message: "Reserva realizada com sucesso." });
-
-    } catch (erro) {
-        console.error('Erro ao reservar sala:', erro);
-        res.status(500).json({ success: false, message: `Erro interno ao processar a reserva: ${erro.sqlMessage || erro.message}` });
+        res.json({ success: true, message: `Reserva ID ${reservaID} cancelada com sucesso.` });
+    } catch (err) {
+        console.error("Erro ao cancelar reserva:", err);
+        res.status(500).json({ success: false, message: "Erro interno ao cancelar reserva." });
     }
 });
 
@@ -186,11 +198,86 @@ app.get('/arquivo/:id', async (req, res) => {
     }
 });
 
+const PDFDocument = require("pdfkit");
+const fs = require("fs");
+
+app.get('/api/exportar-pdf', async (req, res) => {
+    try {
+      const registros = await query(`
+        SELECT r.reservaID, s.numero, s.bloco, r.dataInicio, r.dataTermino, r.periodo, sol.nome AS solicitante, r.statusReserva
+        FROM reserva r
+        JOIN salas s ON r.salasID = s.salasID
+        LEFT JOIN solicitante sol ON r.solicitanteID = sol.solicitanteID
+        ORDER BY r.dataInicio DESC;
+      `);
+  
+      res.setHeader('Content-Type','application/pdf');
+      res.setHeader('Content-Disposition','attachment; filename="relatorio_salas.pdf"');
+  
+      const doc = new PDFDocument({ margin: 40, size: 'A4' });
+      doc.pipe(res);
+  
+      // Cabeçalho com cor (seguindo paleta do site)
+      const primary = "#17307a";
+      doc.rect(0, 0, 595.28, 60).fill(primary);
+      doc.fillColor('#FFFFFF').fontSize(20).text('Relatório de Reservas', 40, 20);
+  
+      doc.moveDown(2);
+      doc.fillColor('#000000');
+  
+      // Data de geração
+      const now = new Date();
+      doc.fontSize(9).fillColor('#333').text(`Gerado em: ${now.toLocaleString('pt-BR')}`, { align: 'right' });
+  
+      doc.moveDown(0.5);
+  
+      // Tabela: cabeçalho
+      const tableTop = 110;
+      const itemX = 40;
+      let y = tableTop;
+      doc.fontSize(10).fillColor('#17307a').text('Sala', itemX, y);
+      doc.text('Bloco', itemX + 60, y);
+      doc.text('Solicitante', itemX + 120, y);
+      doc.text('Data Início', itemX + 270, y);
+      doc.text('Data Término', itemX + 370, y);
+      doc.text('Período', itemX + 470, y);
+  
+      y += 18;
+      doc.moveTo(itemX, y - 4).lineTo(555, y - 4).strokeOpacity(0.1).stroke();
+  
+      // Linhas
+      registros.forEach((r, i) => {
+        const bg = i % 2 === 0 ? 0.97 : 1.0;
+        // Alterna levemente o fundo (PDFKit não tem setOpacityFill para retângulo facilmente, ignoramos bg se quiser)
+        const di = r.dataInicio ? new Date(r.dataInicio).toLocaleString('pt-BR') : '';
+        const dt = r.dataTermino ? new Date(r.dataTermino).toLocaleString('pt-BR') : '';
+  
+        doc.fillColor('#222').fontSize(9);
+        doc.text(`${r.numero}`, itemX, y);
+        doc.text(`${r.bloco || ''}`, itemX + 60, y);
+        doc.text(`${r.solicitante || ''}`, itemX + 120, y, { width: 140 });
+        doc.text(di, itemX + 270, y);
+        doc.text(dt, itemX + 370, y);
+        doc.text(r.periodo || '', itemX + 470, y);
+  
+        y += 18;
+        if (y > 720) { // nova página
+          doc.addPage();
+          y = 40;
+        }
+      });
+  
+      doc.end();
+    } catch (err) {
+      console.error('Erro gerar PDF:', err);
+      res.status(500).send('Erro ao gerar PDF: ' + err.message);
+    }
+  });
+
+
+
 app.get('/rooms', async (req, res) => {
     try {
-        // Esta consulta busca todos os detalhes das salas e, se houver, a última reserva.
-        // Em um sistema real, a lógica de 'Reservada' vs 'Disponível' precisaria checar 
-        // se dataTermino > NOW(). Para simplificar, estamos pegando a última reserva para demonstração.
         const query = `
             SELECT 
                 s.salasID, s.numero, s.andar, s.capacidade, s.bloco,
@@ -214,7 +301,7 @@ app.get('/rooms', async (req, res) => {
                     andar: row.andar,
                     capacidade: row.capacidade,
                     bloco: row.bloco,
-                    status: 'Disponível', // Status padrão
+                    status: 'Disponível', 
                     reservation: null 
                 };
             }
@@ -259,61 +346,52 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'src', 'index.html'));
 });
 
-// Rota para listar salas na página inicial
-// Rota para listar salas na página inicial
-// Rota para listar salas na página inicial (CORRIGIDA)
 app.get("/api/salas", async (req, res) => {
     try {
-        // Query AJUSTADA para fazer um JOIN com reserva e verificar status ATUALMENTE
-        const query = `
-            SELECT 
-                s.salasID AS id,
-                s.numero,
-                s.andar,
-                s.bloco,
-                s.capacidade,
-                -- COALESCE garante que se não houver reserva, o período será 'Não Reservado'
-                COALESCE(r.periodo, 'Não Reservado') AS periodo,
-                -- CRÍTICO: Se houver um registro de reserva ATIVA agora, o status é 'Reservada'.
-                CASE 
-                    WHEN r.reservaID IS NOT NULL AND r.statusReserva = 'Reservada' 
-                    THEN 'Reservada' 
-                    ELSE 'Disponível' 
-                END AS status
-            FROM salas s
-            LEFT JOIN reserva r ON s.salasID = r.salasID 
-                -- CRÍTICO: Filtra apenas reservas ATIVAS no momento
-                AND NOW() BETWEEN r.dataInicio AND r.dataTermino
-            ORDER BY s.numero ASC
-        `;
-        const resultados = await executePromisified(query);
-        
-        // Mapeia os resultados para o formato esperado pelo frontend
-        const salasFormatadas = resultados.map(sala => ({
-            id: sala.id,
-            numero: sala.numero,
-            andar: sala.andar,
-            capacidade: sala.capacidade,
-            bloco: sala.bloco,
-            status: sala.status, // 'Reservada' ou 'Disponível'
-            periodo: sala.periodo // Período reservado (se houver)
-        }));
-        
-        res.json({ success: true, salas: salasFormatadas });
+      const querySQL = `
+        SELECT 
+          s.salasID AS id,
+          s.numero,
+          s.andar,
+          s.bloco,
+          s.capacidade,
+          COALESCE(r.periodo, 'Indefinido') AS periodo,
+          r.reservaID,
+          r.dataInicio,
+          r.dataTermino,
+          CASE 
+            WHEN r.reservaID IS NOT NULL 
+                 AND r.statusReserva = 'Reservada'
+                 AND NOW() BETWEEN r.dataInicio AND r.dataTermino
+            THEN 'Reservada'
+            ELSE 'Disponível'
+          END AS status
+        FROM salas s
+        LEFT JOIN reserva r ON s.salasID = r.salasID
+          AND r.statusReserva = 'Reservada'
+          AND NOW() BETWEEN r.dataInicio AND r.dataTermino
+        ORDER BY s.numero ASC;
+      `;
+  
+      const resultados = await executePromisified(querySQL);
+      const salas = resultados.map(s => ({
+        ...s,
+        status: s.status || 'Disponível'
+      }));
+  
+      res.json({ success: true, salas });
     } catch (err) {
-        console.error("Erro ao buscar salas:", err);
-        res.status(500).json({ success: false, message: "Erro interno ao carregar salas. Verifique o terminal do servidor." });
+      console.error("ERRO NO /api/salas:", err);
+      res.status(500).json({ success: false, message: "Erro ao carregar salas." });
     }
-});
+  });
+  
 
-// NOVA ROTA para a página de Cadastro
 app.get('/salas', (req, res) => {
-    // Certifique-se de que seu arquivo 'cadastro.html' existe na pasta 'src'
     res.sendFile(path.join(__dirname, 'src', 'salas.html'));
 });
 
 app.get('/cadastro', (req, res) => {
-    // Certifique-se de que seu arquivo 'cadastro.html' existe na pasta 'src'
     res.sendFile(path.join(__dirname, 'src', 'cadastro.html'));
 });
 

@@ -58,22 +58,59 @@ function convertToISO(dateString) {
 
 // --- Lógica de Carregamento e Renderização ---
 
+async function carregarProximasReservas() {
+  const container = document.getElementById("listaProximasReservas");
+  if (!container) return;
+
+  container.innerHTML = `<p>Carregando reservas...</p>`;
+
+  try {
+    const res = await fetch("/api/proximas-reservas");
+    const data = await res.json();
+
+    if (!data.success || !data.reservas.length) {
+      container.innerHTML = `<p>Nenhuma reserva futura.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    data.reservas.forEach(r => {
+      const dataObj = new Date(r.dataInicio);
+      const dia = dataObj.getDate();
+      const mes = dataObj.toLocaleString("pt-BR", { month: "short" });
+
+      const card = `
+        <div class="reserva-card">
+          <div class="reserva-data">
+            <div class="dia">${dia}</div>
+            <div class="mes">${mes}</div>
+          </div>
+          <div class="reserva-info">
+            <h4>Sala ${r.numero} - Bloco ${r.bloco}</h4>
+            <p><strong>Período:</strong> ${r.periodo || "-"}</p>
+            <p><strong>Responsável:</strong> ${r.solicitante || "-"}</p>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", card);
+    });
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<p>Erro ao carregar reservas.</p>`;
+  }
+}
+
 function renderSalas(containerId, statusFilter) {
     const container = document.getElementById(containerId);
     if (!container) return;
     container.innerHTML = "";
     
-    if (!salas || salas.length === 0) {
-        container.innerHTML = `<p class="no-rooms">Nenhuma sala cadastrada ou erro no carregamento.</p>`;
-        return;
-    }
-
-    // Filtra as salas pelo status (Disponível ou Reservada)
+    // Filtra as salas. O status é definido pelo backend: 'Reservada' ou 'Disponível'
     const filteredSalas = salas.filter((sala) => (sala.status || 'Disponível') === statusFilter); 
 
-    if (filteredSalas.length === 0) {
-        const message = statusFilter === "Disponível" ? "Nenhuma sala disponível no momento." : "Nenhuma sala reservada no momento.";
-        container.innerHTML = `<p class="no-rooms">${message}</p>`;
+    if (!filteredSalas || filteredSalas.length === 0) {
+        // ... (Mensagens de "Nenhuma sala disponível/reservada")
+        container.innerHTML = `<p class="no-rooms">Nenhuma sala ${statusFilter === 'Disponível' ? 'disponível' : 'reservada'} no momento.</p>`;
         return;
     }
 
@@ -82,89 +119,182 @@ function renderSalas(containerId, statusFilter) {
         card.classList.add("room-card");
         
         const isReserved = sala.status === "Reservada";
-        const buttonClass = isReserved ? "ghost btn-detalhes" : "btn-reservar";
-        const buttonText = isReserved ? "Ver mais" : "Reservar";
+        
+        // --- HTML dos Botões de Ação ---
+        let actionButtonsHTML = '';
+        
+        if (isReserved) {
+            // Botão para Cancelar Reserva (para salas no container 'Salas Reservadas')
+            // O ID da reserva (sala.reservaID) é CRÍTICO para esta ação
+            actionButtonsHTML = `
+                <button class="btn small btn-cancelar-reserva" data-reserva-id="${sala.reservaID || ''}">
+                    Cancelar Reserva
+                </button>
+            `;
+        } else {
+            // Botão/Ícone para Excluir Sala (para salas no container 'Salas Disponíveis')
+            // Requer a biblioteca Font Awesome linkada no salas.html
+            actionButtonsHTML = `
+                <button class="btn-excluir" title="Excluir Sala" data-sala-id="${sala.id}">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+        }
 
-        // Aqui usamos sala.id 
+        // --- Montagem do Card ---
         card.innerHTML = `
-            <div class="card-header">SALA ${sala.numero} - Bloco ${sala.bloco || 'A'}</div>
+            <div class="card-header">
+                SALA ${sala.numero} - Bloco ${sala.bloco || 'A'}
+                
+                ${!isReserved ? actionButtonsHTML : ''} </div>
             <p><strong>Andar:</strong> ${sala.andar}º</p>
             <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
             <p><strong>Período:</strong> ${sala.periodo || 'Indefinido'}</p>
             
-            <button class="btn small ${buttonClass}" data-sala-id="${sala.id}">
-                ${buttonText}
+            ${isReserved ? actionButtonsHTML : ''} <button class="btn small ${isReserved ? "ghost btn-detalhes" : "btn-reservar"}" 
+                    data-sala-id="${sala.id}" 
+                    data-reserva-id="${sala.reservaID || ''}" 
+                    data-is-reserved="${isReserved}">
+                ${isReserved ? "Ver mais" : "Reservar"}
             </button>
+            
         `;
         container.appendChild(card);
     });
     
-    // Adiciona listeners aos botões de reserva
+    // 2. Adiciona Listeners para Reservar (Se já não estiver)
     container.querySelectorAll(".btn-reservar").forEach((btn) => {
         btn.addEventListener("click", function () {
-            const salaId = this.dataset.salaId;
-            abrirModalReserva(salaId);
+            abrirModalReserva(this.dataset.salaId);
         });
     });
 
-    // ... (Lógica para btn-detalhes se necessário)
+    // 3. Adiciona Listener para Excluir Sala
+    container.querySelectorAll(".btn-excluir").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const salaId = this.dataset.salaId;
+            if (confirm(`Tem certeza que deseja EXCLUIR permanentemente a Sala ID ${salaId}?`)) {
+                excluirSala(salaId);
+            }
+        });
+    });
+
+    // 4. Adiciona Listener para Cancelar Reserva
+    container.querySelectorAll(".btn-cancelar-reserva").forEach((btn) => {
+        btn.addEventListener("click", function () {
+            const reservaId = this.dataset.reservaId;
+            if (confirm(`Tem certeza que deseja CANCELAR a reserva ID ${reservaId}? A sala voltará a ser DISPONÍVEL.`)) {
+                cancelarReserva(reservaId);
+            }
+        });
+    });
 }
 
 async function carregarDadosIniciais() {
-    const containerDisponiveis = document.getElementById("listaSalas"); // Container para disponíveis
-    const containerReservadas = document.getElementById("salasReservadas"); // Container para reservadas
-    
-    if (!containerDisponiveis) return;
-    
-    containerDisponiveis.innerHTML = `<p class="loading-message">Carregando salas...</p>`;
-    if (containerReservadas) containerReservadas.innerHTML = `<p class="loading-message">Carregando salas reservadas...</p>`;
+  const containerDisponiveis = document.getElementById("listaSalas"); // Container para disponíveis
+  const containerReservadas = document.getElementById("salasReservadas"); // Container para reservadas
 
-    try {
-        // 1. Busca as Salas
-        const responseSalas = await fetch("/api/salas"); 
-        const dataSalas = await responseSalas.json();
+  if (!containerDisponiveis) return;
 
-        if (!responseSalas.ok || !dataSalas.success) {
-            throw new Error(dataSalas.message || `Falha ao buscar salas: Status ${responseSalas.status}`);
-        }
-        
-        // Adaptação dos dados
-        salas = dataSalas.salas.map(s => ({
-            id: s.salasID || s.id, // Suporte para 'salasID' ou 'id'
-            numero: s.numero,
-            andar: s.andar,
-            capacidade: s.capacidade,
-            bloco: s.bloco,
-            // O status deve vir do backend
-            status: s.status || 'Disponível', 
-            periodo: s.periodo 
-        }));
-       const salasDisponiveis = salas.filter(s => s.status === "Disponível").length;
-const salasReservadas = salas.filter(s => s.status === "Reservada").length;
-const capacidadeTotal = salas.reduce((sum, s) => sum + (parseInt(s.capacidade) || 0), 0);
-const reservasSemana = salasReservadas; // Se você tiver API de reservas da semana, trocamos depois.
+  containerDisponiveis.innerHTML = `<p class="loading-message">Carregando salas...</p>`;
+  if (containerReservadas) containerReservadas.innerHTML = `<p class="loading-message">Carregando salas reservadas...</p>`;
 
-// Atualiza no DOM
-$("#countDisponiveis").textContent = `${salasDisponiveis} Salas`;
-$("#countReservadas").textContent = `${salasReservadas} Salas`;
-$("#capacidadeTotal").textContent = `${capacidadeTotal} Alunos`;
-$("#reservasSemana").textContent = `${reservasSemana} Agendamentos`;
+  try {
+    const responseSalas = await fetch("/api/salas");
+    const dataSalas = await responseSalas.json();
 
-    } catch (error) {
-        console.error("Erro fatal ao carregar dados iniciais da API:", error);
-        containerDisponiveis.innerHTML = `<p class="no-rooms">Erro ao carregar dados: ${error.message}.</p>`;
-        if (containerReservadas) containerReservadas.innerHTML = "";
-        salas = [];
-        return;
+    if (!responseSalas.ok || !dataSalas.success) {
+      throw new Error(dataSalas.message || `Falha ao buscar salas: Status ${responseSalas.status}`);
     }
-    
-    // CRÍTICO: Renderiza em containers separados
-    renderSalas("listaSalas", "Disponível"); 
-    if (containerReservadas) {
-        renderSalas("salasReservadas", "Reservada"); 
+
+    // Mapear salas incluindo reservaID / datas se existirem
+    salas = dataSalas.salas.map(s => ({
+      id: s.id || s.salasID,
+      numero: s.numero,
+      andar: s.andar,
+      capacidade: s.capacidade,
+      bloco: s.bloco,
+      status: s.status || 'Disponível',
+      periodo: s.periodo || 'Indefinido',
+      reservaID: s.reservaID || null,
+      dataInicio: s.dataInicio || null,
+      dataTermino: s.dataTermino || null
+    }));
+
+    const salasDisponiveis = salas.filter(s => s.status === "Disponível").length;
+    const salasReservadas = salas.filter(s => s.status === "Reservada").length;
+    const capacidadeTotal = salas.reduce((sum, s) => sum + (parseInt(s.capacidade) || 0), 0);
+    const reservasSemana = salasReservadas;
+
+    const elDisponiveis = document.getElementById("countDisponiveis");
+    const elReservadas = document.getElementById("countReservadas");
+    const elCapacidade = document.getElementById("capacidadeTotal");
+    const elSemana = document.getElementById("reservasSemana");
+
+    if (elDisponiveis && elReservadas && elCapacidade && elSemana) {
+      elDisponiveis.textContent = `${salasDisponiveis} Salas`;
+      elReservadas.textContent = `${salasReservadas} Salas`;
+      elCapacidade.textContent = `${capacidadeTotal} Alunos`;
+      elSemana.textContent = `${reservasSemana} Agendamentos`;
     }
+
+  } catch (error) {
+    console.error("Erro fatal ao carregar dados iniciais da API:", error);
+    containerDisponiveis.innerHTML = `<p class="no-rooms">Erro ao carregar dados: ${error.message}.</p>`;
+    if (containerReservadas) containerReservadas.innerHTML = "";
+    salas = [];
+    return;
+  }
+  renderSalas("listaSalas", "Disponível");
+  if (containerReservadas) renderSalas("salasReservadas", "Reservada");
 }
 
+async function carregarProximasReservas() {
+  const container = document.getElementById("listaProximasReservas");
+  if (!container) return;
+
+  container.innerHTML = `<p class="loading-message">Carregando reservas...</p>`;
+
+  try {
+    const response = await fetch("/api/proximas-reservas");
+    const data = await response.json();
+
+    if (!data.success || !data.reservas || data.reservas.length === 0) {
+      container.innerHTML = `<p class="no-rooms">Nenhuma reserva futura.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+
+    data.reservas.forEach(r => {
+      const dataObj = r.dataInicio ? new Date(r.dataInicio) : null;
+      const dia = dataObj ? dataObj.getDate() : '';
+      const mes = dataObj ? dataObj.toLocaleString("pt-BR", { month: "short" }) : '';
+
+      const horario = r.periodo || '';
+
+      const html = `
+        <div class="reserva-card">
+          <div class="reserva-data">
+            <div class="dia">${dia}</div>
+            <div class="mes">${mes}</div>
+          </div>
+
+          <div class="reserva-info">
+            <h4>Sala ${r.numero} - Bloco ${r.bloco || ''}</h4>
+            <p><strong>Horário:</strong> ${horario}</p>
+            <p><strong>Responsável:</strong> ${r.solicitante || ''}</p>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', html);
+    });
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<p class="no-rooms">Erro ao carregar reservas.</p>`;
+  }
+}
 
 // --- Lógica de Submissão da Reserva (CORRIGIDA E COMPLETA) ---
 
@@ -249,7 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     carregarDadosIniciais();
-
+    carregarProximasReservas();
     // Lógica para fechar modais
     closeButtons.forEach((btn) => {
         btn.addEventListener("click", function () {
@@ -257,7 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fecharModal(modal);
         });
     });
-    
+  
     // Se você estiver usando Flatpickr (descomente e adicione o script do flatpickr no seu HTML)
     // if (typeof flatpickr !== 'undefined') {
     //     flatpickr("#dataReserva", {
@@ -268,3 +398,344 @@ document.addEventListener("DOMContentLoaded", () => {
     // }
     
 });
+
+async function carregarProximasReservas() {
+  const container = document.getElementById("listaProximasReservas");
+  if (!container) return;
+
+  container.innerHTML = `<p class="loading-message">Carregando reservas...</p>`;
+
+  try {
+    const response = await fetch("/api/proximas-reservas");
+    const data = await response.json();
+
+    if (!data.success || data.reservas.length === 0) {
+      container.innerHTML = `<p class="no-rooms">Nenhuma reserva futura.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+
+    data.reservas.forEach(r => {
+      const dataObj = new Date(r.data);
+      const dia = dataObj.getDate();
+      const mes = dataObj.toLocaleString("pt-BR", { month: "short" });
+
+      container.innerHTML += `
+        <div class="reserva-card">
+          <div class="reserva-data">
+            <div class="dia">${dia}</div>
+            <div class="mes">${mes}</div>
+          </div>
+
+          <div class="reserva-info">
+            <h4>Sala ${r.numero} - Bloco ${r.bloco}</h4>
+            <p><strong>Horário:</strong> ${r.horario}</p>
+            <p><strong>Responsável:</strong> ${r.solicitante}</p>
+          </div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    container.innerHTML = `<p class="no-rooms">Erro ao carregar reservas.</p>`;
+  }
+}
+
+async function excluirSala(salaId) {
+    try {
+        const response = await fetch(`/api/salas/${salaId}`, {
+            method: 'DELETE',
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Falha ao excluir sala.');
+        }
+
+        alert(`✅ Sala ID ${salaId} excluída com sucesso!`);
+        await carregarDadosIniciais(); // Recarrega a lista
+    } catch (error) {
+        console.error("Erro ao excluir sala:", error);
+        alert(`❌ Erro ao excluir sala. Detalhes: ${error.message}`);
+    }
+}
+
+async function cancelarReserva(reservaId) {
+    try {
+        const response = await fetch(`/api/reservas/cancelar/${reservaId}`, {
+            method: 'PUT', // Usa PUT ou POST para atualizar o status
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Falha ao cancelar reserva.');
+        }
+
+        alert(`✅ Reserva ID ${reservaId} cancelada. Sala agora disponível!`);
+        await carregarDadosIniciais(); // Recarrega a lista
+    } catch (error) {
+        console.error("Erro ao cancelar reserva:", error);
+        alert(`❌ Erro ao cancelar reserva. Detalhes: ${error.message}`);
+    }
+}
+
+// script.js (Adicione após a declaração das suas variáveis DOM)
+
+// ... (seus 'const' e 'let' globais)
+
+// Funções para Dark Mode
+function toggleDarkMode(isDark) {
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const savedTheme = localStorage.getItem('theme');
+    const themeToggle = document.getElementById('theme-toggle');
+
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        toggleDarkMode(true);
+        if (themeToggle) themeToggle.checked = true;
+    } else {
+        if (themeToggle) themeToggle.checked = false;
+    }
+
+    // 2. Listener para o botão de alternância
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            toggleDarkMode(this.checked);
+        });
+    }
+});
+
+function applyTheme() {
+    const body = document.body;
+    const themeToggle = document.getElementById("theme-toggle");
+
+    // Tenta obter a preferência do usuário, assume "false" (tema claro) se não houver
+    let isDarkMode = localStorage.getItem('darkMode') === 'true';
+
+    // Sincroniza o estado do switch (checkbox)
+    if (themeToggle) {
+        themeToggle.checked = isDarkMode;
+    }
+
+    // Aplica ou remove a classe 'dark-mode'
+    if (isDarkMode) {
+        body.classList.add('dark-mode');
+    } else {
+        body.classList.remove('dark-mode');
+    }
+}
+
+function setupThemeToggle() {
+    const themeToggle = document.getElementById("theme-toggle");
+    if (themeToggle) {
+        themeToggle.addEventListener('change', () => {
+            const isDarkMode = themeToggle.checked;
+            // Salva a preferência no armazenamento local (localStorage)
+            localStorage.setItem('darkMode', isDarkMode);
+            // Aplica o tema imediatamente
+            applyTheme();
+        });
+    }
+}
+
+ // Abre/fecha modal e alternância de abas
+document.addEventListener("DOMContentLoaded", () => {
+ const configButtons = document.querySelectorAll("#configButton");
+  const modal = $("#configModal");
+  const closeBtn = $("#closeConfig");
+
+  // open handlers
+  configButtons.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (modal) modal.style.display = "flex";
+    });
+  });
+
+  // close X
+  if (closeBtn)
+    closeBtn.addEventListener("click", () => {
+      if (modal) modal.style.display = "none";
+    });
+
+  // close ao clicar fora
+  if (modal)
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.style.display = "none";
+    });
+
+  // abas do modal
+  const tabs = document.querySelectorAll(".config-sidebar li");
+  const configContent = $("#configContent");
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      const name = tab.dataset.tab;
+      if (configContent) {
+        if (name === "geral") {
+          configContent.querySelector("h2").textContent =
+            "Configurações — Geral";
+        } else {
+          configContent.querySelector("h2").textContent =
+            "Configurações — Personalizar";
+        }
+      }
+    });
+  });
+
+  // Tema
+  const themeToggle = $("#theme-toggle");
+  const root = document.documentElement;
+  const saved = localStorage.getItem("site-theme") || "light";
+  applyTheme();
+    setupThemeToggle();(saved);
+
+  if (themeToggle) {
+    themeToggle.checked = saved === "dark";
+    themeToggle.addEventListener("change", (e) => {
+      const v = e.target.checked ? "dark" : "light";
+      applyTheme(v);
+      localStorage.setItem("site-theme", v);
+    });
+  }// Abre/fecha modal e alternância de abas
+document.addEventListener("DOMContentLoaded", () => {
+  const configButtons = document.querySelectorAll("#btnConfig");
+  const modal = $("#configModal");
+  const closeBtn = $("#closeConfig");
+  configModal.removeAttribute("aria-hidden");
+
+  // open handlers
+  configButtons.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (modal) modal.style.display = "flex";
+    });
+  });
+
+  // close X
+  if (closeBtn)
+    closeBtn.addEventListener("click", () => {
+      if (modal) modal.style.display = "none";
+    });
+
+  // close ao clicar fora
+  if (modal)
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.style.display = "none";
+    });
+
+  // abas do modal
+  const tabs = document.querySelectorAll(".config-sidebar li");
+  const configContent = $("#configContent");
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      const name = tab.dataset.tab;
+      if (configContent) {
+        if (name === "geral") {
+          configContent.querySelector("h2").textContent =
+            "Configurações — Geral";
+        } else {
+          configContent.querySelector("h2").textContent =
+            "Configurações — Personalizar";
+        }
+      }
+    });
+  });
+
+// Aplica tema
+function applyTheme(mode) {
+  if (mode === "dark") {
+    document.documentElement.style.setProperty("--primary-color", "#0f274f");
+    document.documentElement.style.setProperty("--secondary-color", "#3467f0");
+    document.documentElement.style.setProperty("--background-color", "#0b0f1a");
+    document.documentElement.style.setProperty("--card-bg", "#0f1724");
+    document.documentElement.style.setProperty("--text-color", "#e6eef8");
+    document.documentElement.style.setProperty("--light-text-color", "#97a3c1");
+    document.documentElement.style.setProperty(
+      "--sidebar-active-bg",
+      "#0b1838"
+    );
+  } else {
+    document.documentElement.style.setProperty("--primary-color", "#17307a");
+    document.documentElement.style.setProperty("--secondary-color", "#3a86ff");
+    document.documentElement.style.setProperty("--background-color", "#f6f7fb");
+    document.documentElement.style.setProperty("--card-bg", "#ffffff");
+    document.documentElement.style.setProperty("--text-color", "#222");
+    document.documentElement.style.setProperty("--light-text-color", "#6f7785");
+    document.documentElement.style.setProperty(
+      "--sidebar-active-bg",
+      "#e9eefc"
+    );
+  }}})});
+
+  const btnExportarReservas = document.getElementById("btnExportarReservar"); // Corri o ID aqui
+
+  // Função de exportação
+const btnExportar = document.getElementById("exportarPDF");
+if (btnExportar) {
+  btnExportar.addEventListener("click", () => {
+    fetch("/api/exportar-pdf")
+      .then(response => {
+        if (!response.ok) throw new Error("Erro ao gerar PDF");
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "relatorio_salas.pdf";
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(err => {
+        console.error("Erro ao baixar PDF:", err);
+        alert("Erro ao gerar PDF.");
+      });
+  });
+}
+
+
+// Otimize a lógica de `reservaForm.addEventListener("submit", ...)`
+if (reservaForm) {
+    reservaForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        // 1. Corrigir a leitura dos IDs no DOM
+        const salaID = this.dataset.salaId || salaSelecionadaId;
+        const solicitante = $("#solicitante").value.trim();
+        
+        // 🚨 CORREÇÃO CRÍTICA: Use o seletor # para ID e remova a função convertToISO
+        const data = $("#dataReserva").value; // Input type="date" já retorna 'YYYY-MM-DD'
+        const horario = $("#horarioReserva").value; // Use o seletor #
+
+        if (!solicitante || !data || !horario) return alert("Preencha todos os campos.");
+        
+        // ... (resto da sua validação de data) ...
+
+        const hoje = new Date().toISOString().split("T")[0];
+        if (data < hoje) return alert("Não é possível reservar datas anteriores.");
+
+
+        // Monta payload (envia em ISO yyyy-mm-dd)
+        const payload = { salaID, data, horario, solicitante }; 
+
+        // ... (o restante do seu código de fetch) ...
+    });
+}
