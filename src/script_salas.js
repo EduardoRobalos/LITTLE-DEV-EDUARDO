@@ -1,4 +1,3 @@
-// Cadastro de salas
 const cadastroForm = document.querySelector('#formCadastro');
 
 cadastroForm.addEventListener("submit", async (e) => {
@@ -29,10 +28,8 @@ cadastroForm.addEventListener("submit", async (e) => {
             mensagem.textContent = "Sala cadastrada com sucesso!";
             mensagem.className = "mensagem sucesso";
 
-            // Limpa formulário
             cadastroForm.reset();
 
-            // Remove mensagem após 3 segundos
             setTimeout(() => {
                 mensagem.textContent = "";
             }, 3000);
@@ -48,7 +45,6 @@ cadastroForm.addEventListener("submit", async (e) => {
     }
 });
 
-// Aplica tema
 function applyTheme(mode) {
   if (mode === "dark") {
     document.documentElement.style.setProperty("--primary-color", "#0f274f");
@@ -96,7 +92,6 @@ async function carregarSalas() {
 
 carregarSalas();
 
-// Modal de Reserva
 document.addEventListener("DOMContentLoaded", () => {
   const reservaModal = document.getElementById("reservaModal");
   const detalhesModal = document.getElementById("detalhesModal");
@@ -104,7 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const reservaForm = document.getElementById("reservaForm");
   let salaSelecionada = null;
 
-  // Abre o modal ao clicar em "Reservar"
   document.addEventListener("click", (e) => {
     if (e.target.classList.contains("btn-reservar")) {
       salaSelecionada =
@@ -116,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const salaNome =
         e.target.closest(".room-card")?.querySelector(".card-header, h3")
           ?.innerText || "Sala";
-      const reservante = "João Silva"; // Substitua por lógica real de fetch do DB se disponível
+      const reservante = "João Silva";
       document.getElementById(
         "detalhesInfo"
       ).innerText = `Reservado por: ${reservante} para ${salaNome}`;
@@ -125,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Fecha modais ao clicar no X
   closeReservaButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       reservaModal.style.display = "none";
@@ -134,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Fecha ao clicar fora
   reservaModal.addEventListener("click", (e) => {
     if (e.target === reservaModal) {
       reservaModal.style.display = "none";
@@ -148,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Submete o formulário de reserva
   reservaForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const solicitante = document.getElementById("solicitante").value.trim();
@@ -160,9 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Extrai número da sala da string (ex.: "SALA 307" -> "307")
     const numeroSala = salaSelecionada.match(/\d+/)[0];
-    // Atualiza o status da sala para "Reservada"
     const salaIndex = salas.findIndex((s) => s.numero === numeroSala);
     if (salaIndex !== -1) {
       salas[salaIndex].status = "Reservada";
@@ -173,10 +162,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const dataCompleta = `${data} ${inicio}`;
     reservas.push({
       sala: salaSelecionada,
-      descricao: "Reserva", // Pode ser dinâmico via input futuro
+      descricao: "Reserva", 
       inicio: dataCompleta,
       termino: `${data} ${termino}`,
-      solicitante: "Usuário Atual", // Substitua por autenticação real
+      solicitante: "Usuário Atual", 
     });
 
     // Re-renderiza as seções
@@ -194,7 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Tema
 const themeToggle = $("#theme-toggle");
 const root = document.documentElement;
 const saved = localStorage.getItem("site-theme") || "light";
@@ -209,7 +197,6 @@ if (themeToggle) {
   });
 }
 
-// botão fechar modal ao pressionar Esc
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape" && modal && modal.style.display === "flex")
     modal.style.display = "none";
@@ -220,7 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = $("#configModal");
   const closeBtn = $("#closeConfig");
 
-  // open handlers
   configButtons.forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -228,19 +214,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // close X
   if (closeBtn)
     closeBtn.addEventListener("click", () => {
       if (modal) modal.style.display = "none";
     });
 
-  // close ao clicar fora
   if (modal)
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.style.display = "none";
     });
 
-  // abas do modal
   const tabs = document.querySelectorAll(".config-sidebar li");
   const configContent = $("#configContent");
 
@@ -261,9 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   })})
 
-  // Adicione esta função em algum lugar no topo do seu script (ex: script.js)
 function showToast(message, type = 'success', duration = 3000) {
-  // 1. Cria o elemento
   let toast = document.getElementById('app-toast');
   if (!toast) {
       toast = document.createElement('div');
@@ -272,7 +253,6 @@ function showToast(message, type = 'success', duration = 3000) {
       document.body.appendChild(toast);
   }
 
-  // 2. Define o ícone e a cor (baseado no 'type')
   let icon = '';
   if (type === 'success') {
       icon = '<i class="fas fa-check-circle"></i>';
@@ -280,16 +260,14 @@ function showToast(message, type = 'success', duration = 3000) {
   } else if (type === 'error') {
       icon = '<i class="fas fa-exclamation-triangle"></i>';
       toast.style.backgroundColor = '#f44336';
-  } else { // info
+  } else { 
       icon = '<i class="fas fa-info-circle"></i>';
       toast.style.backgroundColor = '#2196F3';
   }
 
-  // 3. Define o conteúdo e a classe 'show'
   toast.innerHTML = icon + '<span>' + message + '</span>';
   toast.classList.add('show');
 
-  // 4. Remove a notificação após o tempo definido
   setTimeout(() => {
       toast.classList.remove('show');
   }, duration);

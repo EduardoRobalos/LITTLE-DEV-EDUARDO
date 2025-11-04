@@ -75,81 +75,65 @@ app.post("/cadastro", async (req, res) => {
     }
   });
 
-//Rota para RESERVAR uma sala
 	app.post("/api/reservar", async (req, res) => {
-	    const { salaID, data, horario, periodo, solicitante } = req.body;
+  const { salaID, data, horario, solicitante, periodo } = req.body;
 
-    // Validação básica
-    if (!salaID || !data || !horario || !solicitante) {
-        return res.status(400).json({ success: false, message: "Dados incompletos: salaID, data, horario ou solicitante ausentes." });
+  if (!salaID || !data || !horario || !solicitante) {
+    return res.status(400).json({
+      success: false,
+      message: "Dados incompletos para reserva."
+    });
+  }
+
+  try {
+    // Converte data e horário
+    const [year, month, day] = data.split("-").map(Number);
+    const [hour, minute] = horario.split(":").map(Number);
+    const inicio = new Date(year, month - 1, day, hour, minute, 0);
+
+    if (isNaN(inicio.getTime())) {
+      return res.status(400).json({ success: false, message: "Data ou horário inválido." });
     }
 
-    try {
-        const [year, month, day] = data.split('-').map(Number); 
-      
-        const [hour, minute] = horario.split(':').map(Number); 
-        
-        const dataInicioObj = new Date(year, month - 1, day, hour, minute, 0); 
+    const pad = (n) => String(n).padStart(2, "0");
+    const dataInicioStr = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:00`;
 
-        //Verifica se a data é válida
-        if (isNaN(dataInicioObj.getTime())) {
-             console.error(`Erro ao criar Date object: data=${data}, horario=${horario}`);
-             return res.status(400).json({ success: false, message: "Valor de Data ou Horário inválido." });
-        }
+    // Termino = início + 2 horas
+    const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
+    const dataTerminoStr = `${fim.getFullYear()}-${pad(fim.getMonth() + 1)}-${pad(fim.getDate())} ${pad(fim.getHours())}:${pad(fim.getMinutes())}:00`;
 
-        // Formata dataInicio para o formato SQL DATETIME (YYYY-MM-DD HH:MM:SS)
-        const pad = (num) => String(num).padStart(2, '0');
-        const dataInicioStr = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:00`;
+    // Verifica conflito
+    const conflitoSQL = `
+      SELECT reservaID FROM reserva
+      WHERE salasID = ?
+        AND statusReserva = 'Reservada'
+        AND NOT (dataTermino <= ? OR dataInicio >= ?)
+    `;
+    const conflito = await query(conflitoSQL, [salaID, dataInicioStr, dataTerminoStr]);
 
-        const dataTerminoObj = new Date(dataInicioObj.getTime()); 
-        dataTerminoObj.setHours(dataTerminoObj.getHours() + 2); // Adiciona 2 horas
-        
-        // Formata dataTermino para SQL
-        const endYear = dataTerminoObj.getFullYear();
-        const endMonth = pad(dataTerminoObj.getMonth() + 1); 
-        const endDay = pad(dataTerminoObj.getDate());
-        const endHour = pad(dataTerminoObj.getHours());
-        const endMinute = pad(dataTerminoObj.getMinutes());
-
-        const dataTerminoStr = `${endYear}-${endMonth}-${endDay} ${endHour}:${endMinute}:00`;
-        
-        const sql = `
-  SELECT reservaID
-  FROM reserva
-  WHERE salasID = ?
-    AND statusReserva = 'Reservada'
-    AND NOT (dataTermino <= ? OR dataInicio >= ?)
-`;
-const params = [salaID, dataInicioStr, dataTerminoStr];
-
-const [rows] = await query(sql, params);
-
-        if (existingReservations.length > 0) {
-            return res.status(409).json({ success: false, message: "Sala já reservada para este horário. Conflito detectado." });
-        }
-        
-         const resultSolic = await query("INSERT INTO solicitante (nome) VALUES (?)", [solicitante]);
-         const solicitanteID = resultSolic.insertId; 
-
-
-          await query(
-      "INSERT INTO reserva (salasID, dataInicio, periodo, solicitanteID) VALUES (?, ?, ?, ?)",
-      [salaID, data, horario, solicitanteID]
-    );
-    
-	        const insertQuery = `
-	            INSERT INTO reserva (statusReserva, periodo, salasID, dataInicio, dataTermino)
-	            VALUES (?, ?, ?, ?, ?)
-	        `;
-	        await executePromisified(insertQuery, ['Reservada', periodo, salaID, dataInicioStr, dataTerminoStr]);
-        
-        res.json({ success: true, message: "Reserva realizada com sucesso." });
-
-    } catch (erro) {
-        console.error('Erro ao reservar sala:', erro);
-        res.status(500).json({ success: false, message: `Erro interno ao processar a reserva: ${erro.sqlMessage || erro.message}` });
+    if (conflito.length > 0) {
+      return res.status(409).json({ success: false, message: "⛔ Sala já reservada nesse horário." });
     }
+
+    // Cadastra solicitante
+    const resultSolic = await query("INSERT INTO solicitante (Nome) VALUES (?)", [solicitante]);
+    const solicitanteID = resultSolic.insertId;
+
+    // ✅ **INSERÇÃO CORRETA → apenas 1 registro**
+    const insertSQL = `
+      INSERT INTO reserva (salasID, dataInicio, dataTermino, periodo, statusReserva, solicitanteID)
+      VALUES (?, ?, ?, ?, 'Reservada', ?)
+    `;
+    await query(insertSQL, [salaID, dataInicioStr, dataTerminoStr, periodo, solicitanteID]);
+
+    res.json({ success: true, message: "✅ Sala reservada com sucesso!" });
+
+  } catch (err) {
+    console.error("Erro ao reservar sala:", err);
+    res.status(500).json({ success: false, message: "Erro interno ao reservar sala." });
+  }
 });
+
 
 app.delete("/api/salas/:id", async (req, res) => {
     const salaID = req.params.id;
@@ -174,8 +158,6 @@ app.delete("/api/salas/:id", async (req, res) => {
 app.put("/api/reservas/cancelar/:id", async (req, res) => {
     const reservaID = req.params.id;
     try {
-        // Opção mais simples: EXCLUIR a reserva. 
-        // Isso garante que a próxima busca por salas a mostrará como 'Disponível'.
         const query = "DELETE FROM reserva WHERE reservaID = ?";
         const result = await executePromisified(query, [reservaID]);
 
@@ -218,64 +200,37 @@ app.get('/arquivo/:id', async (req, res) => {
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 
-app.get("/api/exportar-reservas-pdf", async (req, res) => {
+app.get('/api/exportar-pdf', async (req, res) => {
   try {
-    const querySql = `
-      SELECT r.reservaID, r.dataInicio, r.periodo,
-             s.numero, sol.nome AS solicitante
-      FROM reserva r
-      JOIN salas s ON r.salasID = s.salasID
-      JOIN solicitante sol ON r.solicitanteID = sol.solicitanteID
-      ORDER BY r.dataInicio ASC;
-    `;
-
-    const registros = await query(querySql);
+    const registros = await query(`SUA QUERY AQUI`);
+    res.setHeader('Content-Type','application/pdf');
+    res.setHeader('Content-Disposition','attachment; filename="relatorio.pdf"');
 
     const doc = new PDFDocument({ margin: 40 });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", 'attachment; filename="relatorio_reservas.pdf"');
     doc.pipe(res);
 
-    // HEADER AZUL
-    doc
-      .rect(0, 0, 600, 70)
-      .fill("#1c2a5f");
-    doc
-      .fill("#ffffff")
-      .fontSize(22)
-      .text("Relatório de Reservas", 40, 22);
-
-    doc.moveDown(2);
-
-    registros.forEach((r) => {
-      doc
-        .fill("#1c2a5f")
-        .fontSize(14)
-        .text(`Sala ${r.numero}`);
-
-      doc
-        .fill("#000")
-        .fontSize(12)
-        .text(`Data: ${new Date(r.dataInicio).toLocaleDateString("pt-BR")}`);
-      doc.text(`Período: ${r.periodo}`);
-      doc.text(`Solicitante: ${r.solicitante}`);
-      doc.moveDown();
+    // cabeçalho etc...
+    doc.text('Relatório', { align: 'center' });
+    // tabela simples
+    registros.forEach(r => {
+      doc.moveDown()
+        .fontSize(12).text(`Sala ${r.numero} - Bloco ${r.bloco}`)
+        .text(`Data: ${r.dataInicio.toISOString ? r.dataInicio.toISOString().split('T')[0] : r.dataInicio}`)
+        .text(`Horário: ${r.horario || r.periodo}`)
+        .text(`Solicitante: ${r.solicitante}`);
     });
 
     doc.end();
-
   } catch (err) {
-    console.error("Erro ao gerar PDF:", err);
-    res.status(500).json({ success: false, message: "Erro ao gerar PDF." });
+    console.error('Erro gerar PDF:', err);
+    res.status(500).send('Erro ao gerar PDF: ' + err.message);
   }
 });
 
 
+
 app.get('/rooms', async (req, res) => {
     try {
-        // Esta consulta busca todos os detalhes das salas e, se houver, a última reserva.
-        // Em um sistema real, a lógica de 'Reservada' vs 'Disponível' precisaria checar 
-        // se dataTermino > NOW(). Para simplificar, estamos pegando a última reserva para demonstração.
         const query = `
             SELECT 
                 s.salasID, s.numero, s.andar, s.capacidade, s.bloco,
@@ -299,7 +254,7 @@ app.get('/rooms', async (req, res) => {
                     andar: row.andar,
                     capacidade: row.capacidade,
                     bloco: row.bloco,
-                    status: 'Disponível', // Status padrão
+                    status: 'Disponível', 
                     reservation: null 
                 };
             }
@@ -392,7 +347,6 @@ app.get("/api/salas", async (req, res) => {
                 END AS status
             FROM salas s
             LEFT JOIN reserva r ON s.salasID = r.salasID 
-                -- Filtra por reservas ATIVAS AGORA
                 AND r.statusReserva = 'Reservada'
                 AND NOW() BETWEEN r.dataInicio AND r.dataTermino
             ORDER BY s.numero ASC;

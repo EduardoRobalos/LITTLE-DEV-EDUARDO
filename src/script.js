@@ -174,7 +174,7 @@ async function carregarDadosIniciais() {
             capacidade: s.capacidade,
             bloco: s.bloco,
             // O status deve vir do backend
-            status: s.status || 'Disponível', 
+            status: s.status , 
             periodo: s.periodo 
         }));
        const salasDisponiveis = salas.filter(s => s.status === "Disponível").length;
@@ -606,37 +606,54 @@ function applyTheme(mode) {
   const btnExportarReservas = document.getElementById("btnExportarReservar"); // Corri o ID aqui
 
   // Função de exportação
-  function exportarReservasParaPDF() {
-      // 1. Clonar o elemento com as reservas para gerar o PDF
-      const content = document.getElementById("listaReservadas"); // CRÍTICO: Substitua pelo ID REAL do container das suas salas reservadas
-      if (!content) {
-          alert("Erro: Container de reservas (ID: listaReservadas) não encontrado.");
-          return;
-      }
-  
-      // Clonar o conteúdo para aplicar estilos de impressão sem afetar a tela
-      const clone = content.cloneNode(true);
-      clone.classList.add('pdf-export'); // Adiciona uma classe para estilos específicos de PDF/Impressão
-  
-      // 2. Configurações do PDF (Tamanho A4, nome do arquivo, margens)
-      const options = {
-          margin: [10, 10, 10, 10], // Margens: Top, Left, Bottom, Right
-          filename: 'reservas_salas.pdf',
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 }, // Aumenta a resolução para maior qualidade
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-  
-      // 3. Gerar e salvar o PDF
-      html2pdf().from(clone).set(options).save();
-  }
-  
-  // Inicialização: Vincular o evento ao botão
-  document.addEventListener("DOMContentLoaded", () => {
-      // ... Seu código de inicialização (carregarDadosIniciais, listeners de fechar modal) ...
-  
-      const btnExport = document.getElementById("btnExportarReservas");
-      if (btnExport) {
-          btnExport.addEventListener("click", exportarReservasParaPDF);
-      }
+const btnExportar = document.getElementById("exportarPDF");
+if (btnExportar) {
+  btnExportar.addEventListener("click", () => {
+    fetch("/api/exportar-pdf")
+      .then(response => {
+        if (!response.ok) throw new Error("Erro ao gerar PDF");
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "relatorio_salas.pdf";
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(err => {
+        console.error("Erro ao baixar PDF:", err);
+        alert("Erro ao gerar PDF.");
+      });
   });
+}
+
+
+// Otimize a lógica de `reservaForm.addEventListener("submit", ...)`
+if (reservaForm) {
+    reservaForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        // 1. Corrigir a leitura dos IDs no DOM
+        const salaID = this.dataset.salaId || salaSelecionadaId;
+        const solicitante = $("#solicitante").value.trim();
+        
+        // 🚨 CORREÇÃO CRÍTICA: Use o seletor # para ID e remova a função convertToISO
+        const data = $("#dataReserva").value; // Input type="date" já retorna 'YYYY-MM-DD'
+        const horario = $("#horarioReserva").value; // Use o seletor #
+
+        if (!solicitante || !data || !horario) return alert("Preencha todos os campos.");
+        
+        // ... (resto da sua validação de data) ...
+
+        const hoje = new Date().toISOString().split("T")[0];
+        if (data < hoje) return alert("Não é possível reservar datas anteriores.");
+
+
+        // Monta payload (envia em ISO yyyy-mm-dd)
+        const payload = { salaID, data, horario, solicitante }; 
+
+        // ... (o restante do seu código de fetch) ...
+    });
+}
