@@ -23,5 +23,6 @@
     "url": "https://github.com/EduardoRobalos/LITTLE-DEV-EDUARDO/issues"
   },
   "homepage": "https://github.com/EduardoRobalos/LITTLE-DEV-EDUARDO#readme",
-  "type": "commonjs"
+  "type": "commonjs",
+  "devDependencies": {}
 }

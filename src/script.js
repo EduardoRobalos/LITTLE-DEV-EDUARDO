@@ -58,6 +58,48 @@ function convertToISO(dateString) {
 
 // --- Lógica de Carregamento e Renderização ---
 
+async function carregarProximasReservas() {
+  const container = document.getElementById("listaProximasReservas");
+  if (!container) return;
+
+  container.innerHTML = `<p>Carregando reservas...</p>`;
+
+  try {
+    const res = await fetch("/api/proximas-reservas");
+    const data = await res.json();
+
+    if (!data.success || !data.reservas.length) {
+      container.innerHTML = `<p>Nenhuma reserva futura.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    data.reservas.forEach(r => {
+      const dataObj = new Date(r.dataInicio);
+      const dia = dataObj.getDate();
+      const mes = dataObj.toLocaleString("pt-BR", { month: "short" });
+
+      const card = `
+        <div class="reserva-card">
+          <div class="reserva-data">
+            <div class="dia">${dia}</div>
+            <div class="mes">${mes}</div>
+          </div>
+          <div class="reserva-info">
+            <h4>Sala ${r.numero} - Bloco ${r.bloco}</h4>
+            <p><strong>Período:</strong> ${r.periodo || "-"}</p>
+            <p><strong>Responsável:</strong> ${r.solicitante || "-"}</p>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML("beforeend", card);
+    });
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<p>Erro ao carregar reservas.</p>`;
+  }
+}
+
 function renderSalas(containerId, statusFilter) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -149,70 +191,110 @@ function renderSalas(containerId, statusFilter) {
 }
 
 async function carregarDadosIniciais() {
-    const containerDisponiveis = document.getElementById("listaSalas"); // Container para disponíveis
-    const containerReservadas = document.getElementById("salasReservadas"); // Container para reservadas
-    
-    if (!containerDisponiveis) return;
-    
-    containerDisponiveis.innerHTML = `<p class="loading-message">Carregando salas...</p>`;
-    if (containerReservadas) containerReservadas.innerHTML = `<p class="loading-message">Carregando salas reservadas...</p>`;
+  const containerDisponiveis = document.getElementById("listaSalas"); // Container para disponíveis
+  const containerReservadas = document.getElementById("salasReservadas"); // Container para reservadas
 
-    try {
-        // 1. Busca as Salas
-        const responseSalas = await fetch("/api/salas"); 
-        const dataSalas = await responseSalas.json();
+  if (!containerDisponiveis) return;
 
-        if (!responseSalas.ok || !dataSalas.success) {
-            throw new Error(dataSalas.message || `Falha ao buscar salas: Status ${responseSalas.status}`);
-        }
-        
-        // Adaptação dos dados
-        salas = dataSalas.salas.map(s => ({
-            id: s.salasID || s.id, // Suporte para 'salasID' ou 'id'
-            numero: s.numero,
-            andar: s.andar,
-            capacidade: s.capacidade,
-            bloco: s.bloco,
-            // O status deve vir do backend
-            status: s.status , 
-            periodo: s.periodo 
-        }));
-       const salasDisponiveis = salas.filter(s => s.status === "Disponível").length;
-const salasReservadas = salas.filter(s => s.status === "Reservada").length;
-const capacidadeTotal = salas.reduce((sum, s) => sum + (parseInt(s.capacidade) || 0), 0);
-const reservasSemana = salasReservadas; // Se você tiver API de reservas da semana, trocamos depois.
+  containerDisponiveis.innerHTML = `<p class="loading-message">Carregando salas...</p>`;
+  if (containerReservadas) containerReservadas.innerHTML = `<p class="loading-message">Carregando salas reservadas...</p>`;
 
-// Atualiza no DOM
-const elDisponiveis   = document.getElementById("countDisponiveis");
-const elReservadas    = document.getElementById("countReservadas");
-const elCapacidade    = document.getElementById("capacidadeTotal");
-const elSemana        = document.getElementById("reservasSemana");
+  try {
+    const responseSalas = await fetch("/api/salas");
+    const dataSalas = await responseSalas.json();
 
-// Se a página não tiver os cards (ex: salas.html), não faz nada → evita erro
-if (elDisponiveis && elReservadas && elCapacidade && elSemana) {
-    elDisponiveis.textContent = `${salasDisponiveis} Salas`;
-    elReservadas.textContent = `${salasReservadas} Salas`;
-    elCapacidade.textContent = `${capacidadeTotal} Alunos`;
-    elSemana.textContent = `${reservasSemana} Agendamentos`;
-}
-
-
-    } catch (error) {
-        console.error("Erro fatal ao carregar dados iniciais da API:", error);
-        containerDisponiveis.innerHTML = `<p class="no-rooms">Erro ao carregar dados: ${error.message}.</p>`;
-        if (containerReservadas) containerReservadas.innerHTML = "";
-        salas = [];
-        return;
+    if (!responseSalas.ok || !dataSalas.success) {
+      throw new Error(dataSalas.message || `Falha ao buscar salas: Status ${responseSalas.status}`);
     }
-    
-    // CRÍTICO: Renderiza em containers separados
-    renderSalas("listaSalas", "Disponível");
 
-if (containerReservadas) {
-    renderSalas("salasReservadas", "Reservada");
-}
+    // Mapear salas incluindo reservaID / datas se existirem
+    salas = dataSalas.salas.map(s => ({
+      id: s.id || s.salasID,
+      numero: s.numero,
+      andar: s.andar,
+      capacidade: s.capacidade,
+      bloco: s.bloco,
+      status: s.status || 'Disponível',
+      periodo: s.periodo || 'Indefinido',
+      reservaID: s.reservaID || null,
+      dataInicio: s.dataInicio || null,
+      dataTermino: s.dataTermino || null
+    }));
+
+    const salasDisponiveis = salas.filter(s => s.status === "Disponível").length;
+    const salasReservadas = salas.filter(s => s.status === "Reservada").length;
+    const capacidadeTotal = salas.reduce((sum, s) => sum + (parseInt(s.capacidade) || 0), 0);
+    const reservasSemana = salasReservadas;
+
+    const elDisponiveis = document.getElementById("countDisponiveis");
+    const elReservadas = document.getElementById("countReservadas");
+    const elCapacidade = document.getElementById("capacidadeTotal");
+    const elSemana = document.getElementById("reservasSemana");
+
+    if (elDisponiveis && elReservadas && elCapacidade && elSemana) {
+      elDisponiveis.textContent = `${salasDisponiveis} Salas`;
+      elReservadas.textContent = `${salasReservadas} Salas`;
+      elCapacidade.textContent = `${capacidadeTotal} Alunos`;
+      elSemana.textContent = `${reservasSemana} Agendamentos`;
+    }
+
+  } catch (error) {
+    console.error("Erro fatal ao carregar dados iniciais da API:", error);
+    containerDisponiveis.innerHTML = `<p class="no-rooms">Erro ao carregar dados: ${error.message}.</p>`;
+    if (containerReservadas) containerReservadas.innerHTML = "";
+    salas = [];
+    return;
+  }
+  renderSalas("listaSalas", "Disponível");
+  if (containerReservadas) renderSalas("salasReservadas", "Reservada");
 }
 
+async function carregarProximasReservas() {
+  const container = document.getElementById("listaProximasReservas");
+  if (!container) return;
+
+  container.innerHTML = `<p class="loading-message">Carregando reservas...</p>`;
+
+  try {
+    const response = await fetch("/api/proximas-reservas");
+    const data = await response.json();
+
+    if (!data.success || !data.reservas || data.reservas.length === 0) {
+      container.innerHTML = `<p class="no-rooms">Nenhuma reserva futura.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+
+    data.reservas.forEach(r => {
+      const dataObj = r.dataInicio ? new Date(r.dataInicio) : null;
+      const dia = dataObj ? dataObj.getDate() : '';
+      const mes = dataObj ? dataObj.toLocaleString("pt-BR", { month: "short" }) : '';
+
+      const horario = r.periodo || '';
+
+      const html = `
+        <div class="reserva-card">
+          <div class="reserva-data">
+            <div class="dia">${dia}</div>
+            <div class="mes">${mes}</div>
+          </div>
+
+          <div class="reserva-info">
+            <h4>Sala ${r.numero} - Bloco ${r.bloco || ''}</h4>
+            <p><strong>Horário:</strong> ${horario}</p>
+            <p><strong>Responsável:</strong> ${r.solicitante || ''}</p>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', html);
+    });
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = `<p class="no-rooms">Erro ao carregar reservas.</p>`;
+  }
+}
 
 // --- Lógica de Submissão da Reserva (CORRIGIDA E COMPLETA) ---
 
