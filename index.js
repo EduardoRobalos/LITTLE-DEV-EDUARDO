@@ -173,6 +173,29 @@ app.put("/api/reservas/cancelar/:id", async (req, res) => {
     }
 });
 
+app.delete("/api/salas/:id", async (req, res) => {
+  const salaID = req.params.id;
+  if (!salaID || isNaN(parseInt(salaID))) {
+      return res.status(400).json({ success: false, message: "ID da sala inválido." });
+  }
+  
+  try {
+      // A FOREIGN KEY na tabela 'reserva' está com ON DELETE CASCADE
+      // Se houver reservas ativas, elas serão excluídas junto com a sala.
+      const deleteQuery = "DELETE FROM salas WHERE salasID = ?";
+      const result = await executePromisified(deleteQuery, [salaID]);
+
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ success: false, message: "Sala não encontrada para exclusão." });
+      }
+
+      res.json({ success: true, message: `Sala ID ${salaID} excluída com sucesso.` });
+  } catch (err) {
+      console.error("Erro ao excluir sala:", err);
+      res.status(500).json({ success: false, message: "Erro interno ao excluir sala." });
+  }
+});
+
 app.get('/arquivo/:id', async (req, res) => {
     const idArquivo = req.params.id;
 
@@ -385,6 +408,7 @@ app.get("/api/salas", async (req, res) => {
       res.status(500).json({ success: false, message: "Erro ao carregar salas." });
     }
   });
+  
   
 
 app.get('/salas', (req, res) => {
