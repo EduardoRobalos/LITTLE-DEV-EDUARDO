@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard - Salas</title>
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+
+<body>
+  <main class="main-content">
+    <header class="top-bar">
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link active">Página Inicial</a>
+        <a href="/salas" class="nav-link">Salas</a>
+        <a href="/cadastro" class="nav-link">Cadastro</a>
+      </nav>
+
+      <div class="user-actions">
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <div class="filters-bar">
+        </form>
+      </div>
+
+      <section class="reservations-summary">
+        <h2>Próximas Reservas</h2>
+        <div class="reservations-grid">
+          <div class="reservation-card">
+            <i class="fas fa-calendar-alt icon-left"></i>
+            <div id="listaProximasReservas" class="reservas-list"></div>
+      </section>
+
+      <hr class="section-divider" />
+
+      <section class="rooms-section">
+        <section class="rooms-section">
+          <h2>Salas Disponíveis</h2>
+          <div id="listaSalas" class="rooms-grid homepage-rooms">
+            <p>Carregando salas...</p>
+          </div>
+        </section>
+        
+      <hr class="section-divider" />
+
+      <section class="reports-summary">
+        <h2>Relatórios Recentes</h2>
+        <div class="reports-list">
+          <div class="report-item">
+            <div class="report-header">
+              <i class="fas fa-clipboard-list"></i>
+              <span>Relatório de Ocupação - Mês de Fevereiro</span>
+            </div>
+            <p class="report-dates">Período: 01/02/2024 - 29/02/2024</p>
+            <p class="report-desc">Análise de pico de reservas no turno da tarde.</p>
+          </div>
+
+          <div class="report-item">
+            <div class="report-header">
+              <i class="fas fa-clipboard-list"></i>
+              <span>Relatório de Materiais Faltantes - Sala 307</span>
+            </div>
+            <p class="report-dates">Data: 07/03/2024</p>
+            <p class="report-desc">Controle remoto e cabos HDMI ausentes.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  </div>
+
+  <div id="editarModal" class="reserva-modal">
+  <div class="reserva-box">
+    <button class="close-reserva" id="closeEditar">&times;</button>
+    <h2>Editar Sala</h2>
+
+    <form id="formEditar">
+      <input type="hidden" id="editSalaID">
+
+      <div class="form-group">
+        <label>Número da Sala</label>
+        <input type="number" id="editNumero" required>
+      </div>
+
+      <div class="form-group">
+        <label>Andar</label>
+        <input type="number" id="editAndar" required>
+      </div>
+
+      <div class="form-group">
+        <label>Bloco</label>
+        <input type="text" id="editBloco" required>
+      </div>
+
+      <div class="form-group">
+        <label>Capacidade</label>
+        <input type="number" id="editCapacidade" required>
+      </div>
+
+      <button class="btn-reservar-confirmar" type="submit">
+        Salvar Alterações
+      </button>
+    </form>
+
+  </div>
+</div>
+
+  <script src="script.js"></script>
+</body>
+</html>

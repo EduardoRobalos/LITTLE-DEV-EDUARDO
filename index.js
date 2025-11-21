@@ -57,7 +57,6 @@ app.post('/salas', upload.single('arquivo_upload'), async (req, res) => {
     }
 });
 
-// rota para cadastrar nova sala
 app.post("/cadastro", async (req, res) => {
     console.log(req.body)
     const { numero, andar, capacidade, bloco } = req.body;
@@ -83,7 +82,6 @@ app.post("/cadastro", async (req, res) => {
     }
   
     try {
-      // data: "YYYY-MM-DD", horario: "HH:MM" (pegamos hora de início)
       const [year, month, day] = data.split("-").map(Number);
       const [hour, minute] = horario.split(":").map(Number);
       const inicio = new Date(year, month - 1, day, hour, minute, 0);
@@ -92,11 +90,9 @@ app.post("/cadastro", async (req, res) => {
       const pad = (n) => String(n).padStart(2, "0");
       const dataInicioStr = `${year}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:00`;
   
-      // Termino = início + 2 horas (ou use periodo para definir)
       const fim = new Date(inicio.getTime() + 2 * 60 * 60 * 1000);
       const dataTerminoStr = `${fim.getFullYear()}-${pad(fim.getMonth() + 1)}-${pad(fim.getDate())} ${pad(fim.getHours())}:${pad(fim.getMinutes())}:00`;
   
-      // Verifica conflito (mesma sala, intervalo sobreposto)
       const conflitoSQL = `
         SELECT reservaID FROM reserva
         WHERE salasID = ?
@@ -109,11 +105,9 @@ app.post("/cadastro", async (req, res) => {
         return res.status(409).json({ success: false, message: "⛔ Sala já reservada nesse horário." });
       }
   
-      // Cadastra solicitante
       const resultSolic = await query("INSERT INTO solicitante (nome) VALUES (?)", [solicitante]);
       const solicitanteID = resultSolic.insertId;
   
-      // Insere reserva (guarda solicitanteID)
       const insertSQL = `
         INSERT INTO reserva (salasID, dataInicio, dataTermino, periodo, statusReserva, solicitanteID)
         VALUES (?, ?, ?, ?, 'Reservada', ?)
@@ -143,7 +137,7 @@ app.post("/cadastro", async (req, res) => {
           sol.nome AS solicitante
         FROM reserva r
         JOIN salas s ON r.salasID = s.salasID
-        LEFT JOIN solicitante sol ON r.solicitanteID = sol.solicitanteID
+        LEFT JOIN solicitante sol ON r.solicitanteID = sol.solicitante
         WHERE r.statusReserva = 'Reservada'
           AND r.dataInicio >= NOW() - INTERVAL 1 HOUR
         ORDER BY r.dataInicio ASC;
@@ -156,69 +150,63 @@ app.post("/cadastro", async (req, res) => {
     }
   });
 
-app.put("/api/reservas/cancelar/:id", async (req, res) => {
-    const reservaID = req.params.id;
-    try {
-        const query = "DELETE FROM reserva WHERE reservaID = ?";
-        const result = await executePromisified(query, [reservaID]);
+   app.put("/api/salas/:id", async (req, res) => {
+  const id = req.params.id;
+  const { numero, andar, bloco, capacidade } = req.body;
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: "Reserva não encontrada." });
-        }
+  try {
+      const sql = `
+        UPDATE salas
+        SET numero = ?, andar = ?, bloco = ?, capacidade = ?
+        WHERE salasID = ?
+      `;
 
-        res.json({ success: true, message: `Reserva ID ${reservaID} cancelada com sucesso.` });
-    } catch (err) {
-        console.error("Erro ao cancelar reserva:", err);
-        res.status(500).json({ success: false, message: "Erro interno ao cancelar reserva." });
-    }
+      const result = await executePromisified(sql, [numero, andar, bloco, capacidade, id]);
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ success: false, message: "Sala não encontrada." });
+      }
+
+      res.json({ success: true, message: "Sala atualizada com sucesso." });
+
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Erro ao atualizar sala." });
+  }
 });
 
 app.delete("/api/salas/:id", async (req, res) => {
-  const salaID = req.params.id;
-  if (!salaID || isNaN(parseInt(salaID))) {
-      return res.status(400).json({ success: false, message: "ID da sala inválido." });
-  }
-  
+  const { id } = req.params;
+
   try {
-      // A FOREIGN KEY na tabela 'reserva' está com ON DELETE CASCADE
-      // Se houver reservas ativas, elas serão excluídas junto com a sala.
-      const deleteQuery = "DELETE FROM salas WHERE salasID = ?";
-      const result = await executePromisified(deleteQuery, [salaID]);
+    await executePromisified(
+      "DELETE FROM reserva WHERE salasID = ?",
+      [id]
+    );
+    const result = await executePromisified(
+      "DELETE FROM salas WHERE salasID = ?", 
+      [id]
+    );
 
-      if (result.affectedRows === 0) {
-          return res.status(404).json({ success: false, message: "Sala não encontrada para exclusão." });
-      }
-
-      res.json({ success: true, message: `Sala ID ${salaID} excluída com sucesso.` });
-  } catch (err) {
-      console.error("Erro ao excluir sala:", err);
-      res.status(500).json({ success: false, message: "Erro interno ao excluir sala." });
-  }
-});
-
-app.get('/arquivo/:id', async (req, res) => {
-    const idArquivo = req.params.id;
-
-    try {
-        const query = 'SELECT nome, tipo_mime, dados FROM arquivos WHERE id = ?';
-        const linhas = await executePromisified(query, [idArquivo]);
-
-        if (linhas.length === 0) {
-            return res.status(404).send('Arquivo não encontrado.');
-        }
-
-        const arquivo = linhas[0];
-        const dadosBinarios = arquivo.dados;
-
-        res.setHeader('Content-Type', arquivo.tipo_mime);
-        res.setHeader('Content-Disposition', `attachment; filename="${arquivo.nome}"`);
-        
-        res.send(dadosBinarios);
-
-    } catch (erro) {
-        console.error('Erro ao recuperar o arquivo:', erro);
-        res.status(500).send('Erro interno ao recuperar o arquivo.');
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Sala não encontrada"
+      });
     }
+
+    res.json({
+      success: true,
+      message: "Sala excluída com sucesso"
+    });
+
+  } catch (error) {
+    console.error("Erro ao excluir sala:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erro ao excluir sala"
+    });
+  }
 });
 
 const PDFDocument = require("pdfkit");
@@ -226,79 +214,108 @@ const fs = require("fs");
 
 app.get('/api/exportar-pdf', async (req, res) => {
     try {
-      const registros = await query(`
-        SELECT r.reservaID, s.numero, s.bloco, r.dataInicio, r.dataTermino, r.periodo, sol.nome AS solicitante, r.statusReserva
+      const querySQL = `
+        SELECT 
+          r.reservaID,
+          s.numero,
+          s.bloco,
+          r.dataInicio,
+          r.dataTermino,
+          r.periodo,
+          sol.nome AS solicitanteName
         FROM reserva r
         JOIN salas s ON r.salasID = s.salasID
-        LEFT JOIN solicitante sol ON r.solicitanteID = sol.solicitanteID
+        LEFT JOIN solicitante sol ON r.solicitanteID = sol.solicitante 
         ORDER BY r.dataInicio DESC;
-      `);
-  
-      res.setHeader('Content-Type','application/pdf');
-      res.setHeader('Content-Disposition','attachment; filename="relatorio_salas.pdf"');
-  
-      const doc = new PDFDocument({ margin: 40, size: 'A4' });
-      doc.pipe(res);
-  
-      // Cabeçalho com cor (seguindo paleta do site)
-      const primary = "#17307a";
-      doc.rect(0, 0, 595.28, 60).fill(primary);
-      doc.fillColor('#FFFFFF').fontSize(20).text('Relatório de Reservas', 40, 20);
-  
-      doc.moveDown(2);
-      doc.fillColor('#000000');
-  
-      // Data de geração
-      const now = new Date();
-      doc.fontSize(9).fillColor('#333').text(`Gerado em: ${now.toLocaleString('pt-BR')}`, { align: 'right' });
-  
-      doc.moveDown(0.5);
-  
-      // Tabela: cabeçalho
-      const tableTop = 110;
-      const itemX = 40;
-      let y = tableTop;
-      doc.fontSize(10).fillColor('#17307a').text('Sala', itemX, y);
-      doc.text('Bloco', itemX + 60, y);
-      doc.text('Solicitante', itemX + 120, y);
-      doc.text('Data Início', itemX + 270, y);
-      doc.text('Data Término', itemX + 370, y);
-      doc.text('Período', itemX + 470, y);
-  
-      y += 18;
-      doc.moveTo(itemX, y - 4).lineTo(555, y - 4).strokeOpacity(0.1).stroke();
-  
-      // Linhas
-      registros.forEach((r, i) => {
-        const bg = i % 2 === 0 ? 0.97 : 1.0;
-        // Alterna levemente o fundo (PDFKit não tem setOpacityFill para retângulo facilmente, ignoramos bg se quiser)
-        const di = r.dataInicio ? new Date(r.dataInicio).toLocaleString('pt-BR') : '';
-        const dt = r.dataTermino ? new Date(r.dataTermino).toLocaleString('pt-BR') : '';
-  
-        doc.fillColor('#222').fontSize(9);
-        doc.text(`${r.numero}`, itemX, y);
-        doc.text(`${r.bloco || ''}`, itemX + 60, y);
-        doc.text(`${r.solicitante || ''}`, itemX + 120, y, { width: 140 });
-        doc.text(di, itemX + 270, y);
-        doc.text(dt, itemX + 370, y);
-        doc.text(r.periodo || '', itemX + 470, y);
-  
-        y += 18;
-        if (y > 720) { // nova página
-          doc.addPage();
-          y = 40;
-        }
-      });
-  
-      doc.end();
+      `;
+
+const registros = await executePromisified(querySQL);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="relatorio_tabela_salas.pdf"');
+
+        const doc = new PDFDocument({ margin: 0, size: 'A4' });
+        doc.pipe(res);
+
+        const azulEscuro = '#17307a'; 
+        const fundoCinza = '#f1f5f9'; 
+        const textoPreto = '#1e293b'; 
+
+        const drawPageHeader = () => {
+            doc.rect(0, 0, 595.28, 70).fill(azulEscuro);
+        
+            doc.fontSize(20).font('Helvetica-Bold').fillColor('#FFFFFF')
+               .text('Relatório de Reservas', 40, 25);
+            
+            doc.fontSize(9).font('Helvetica').fillColor('#cbd5e1')
+               .text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 40, 50);
+        };
+
+        const colSala = 40;
+        const colSolicitante = 130;
+        const colData = 300;
+        const colPeriodo = 480;
+        const tableWidth = 515; 
+
+        const drawTableHeader = (y) => {
+            doc.rect(40, y, tableWidth, 25).fill(azulEscuro);
+            doc.fillColor('#FFFFFF').fontSize(9).font('Helvetica-Bold');
+            doc.text('SALA / BLOCO', colSala + 5, y + 8);
+            doc.text('SOLICITANTE', colSolicitante + 5, y + 8);
+            doc.text('DATA E HORÁRIO', colData + 5, y + 8);
+            doc.text('PERÍODO', colPeriodo + 5, y + 8);
+        };
+        drawPageHeader();
+        
+        let y = 100; 
+        drawTableHeader(y);
+        y += 25; 
+
+        registros.forEach((r, index) => {
+            const rowHeight = 30;
+
+            if (y + rowHeight > 780) {
+                doc.addPage();
+                drawPageHeader();
+                y = 100; 
+                drawTableHeader(y);
+                y += 25;
+            }
+
+            if (index % 2 === 0) {
+                doc.rect(40, y, tableWidth, rowHeight).fill(fundoCinza);
+            }
+
+            const salaBloco = `${r.numero} - ${r.bloco}`;
+            const nomeSolicitante = r.solicitanteName || '-';
+            
+            const dataFormatada = new Date(r.dataInicio).toLocaleDateString('pt-BR');
+            const horaInicio = new Date(r.dataInicio).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            const horaFim = new Date(r.dataTermino).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+            const horarioCompleto = `${dataFormatada} • ${horaInicio}-${horaFim}`;
+
+            doc.fillColor(textoPreto).fontSize(9).font('Helvetica');
+
+            doc.text(salaBloco, colSala + 5, y + 10, { width: 80, ellipsis: true });
+
+            doc.text(nomeSolicitante, colSolicitante + 5, y + 10, { width: 160, ellipsis: true });
+
+            doc.text(horarioCompleto, colData + 5, y + 10, { width: 170 });
+
+            doc.text(r.periodo || '-', colPeriodo + 5, y + 10, { width: 70, ellipsis: true });
+
+            y += rowHeight;
+        });
+
+        doc.end();
+
     } catch (err) {
-      console.error('Erro gerar PDF:', err);
-      res.status(500).send('Erro ao gerar PDF: ' + err.message);
+        console.error('Erro gerar PDF:', err);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: 'Erro ao gerar PDF: ' + err.message });
+        }
     }
-  });
-
-
-
+});
 app.get('/rooms', async (req, res) => {
     try {
         const query = `
@@ -311,8 +328,6 @@ app.get('/rooms', async (req, res) => {
         `;
         
         const roomsData = await executePromisified(query);
-
-        // Processa o resultado para estruturar os dados e determinar o status atual de cada sala
         const roomsMap = {};
 
         roomsData.forEach(row => {
@@ -329,7 +344,6 @@ app.get('/rooms', async (req, res) => {
                 };
             }
             
-            // Assume que a última reserva 'Reservada' encontrada é a atual
             if (row.reservaID && row.statusReserva === 'Reservada' && !roomsMap[salaId].reservation) {
                 roomsMap[salaId].status = 'Reservada';
                 roomsMap[salaId].reservation = {
@@ -354,7 +368,6 @@ console.log('DADOS BRUTOS DO BANCO:', roomsData);
 
 app.get('/api/cadastro-salas', async (req, res) => {
     try {
-        // Busca os campos da tabela 'cadastroSalas' no seu DB little dev.sql
         const query = 'SELECT cadastroID AS salasID, numero, andar, bloco, tipo FROM cadastroSalas ORDER BY numero';
         const resultados = await executePromisified(query);
 

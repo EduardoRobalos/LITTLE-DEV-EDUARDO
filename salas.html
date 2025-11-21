@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Salas - Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+</head>
+<body>
+  <link rel="stylesheet" href="style.css" />
+    <main class="main-content">
+      <header class="top-bar">
+        <nav class="main-nav">
+          <a href="index.html" class="nav-link">Página Inicial</a>
+          <a href="/salas" class="nav-link active">Salas</a>
+          <a href="/cadastro" class="nav-link">Cadastro</a>
+        </nav>
+        <div class="user-actions">
+        </div>
+      </header>
+
+      <main class="content-area">
+        <section class="filters-bar">
+        </section>
+    
+        <section class="stats-section">
+          <div class="stat-card">
+            <i class="fas fa-door-open"></i>
+            <div>
+              <p>Salas Disponíveis</p>
+              <span id="countDisponiveis">0 Salas</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-user-clock"></i>
+            <div>
+              <p>Salas Reservadas</p>
+                <span id="countReservadas">0 Salas</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <div>
+              <p>Capacidade Total</p>
+               <span id="capacidadeTotal">0 Alunos</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <i class="fas fa-calendar-alt"></i>
+            <div>
+              <p>Reservas da Semana</p>
+                <span id="reservasSemana">0 Agendamentos</span>
+            </div>
+          </div>
+        </section>
+      
+        <section class="rooms-section">
+          <section class="rooms-section">
+            <h2>Salas Disponíveis</h2>
+            <div id="listaSalas" class="rooms-grid"></div>
+          </section>
+          
+          <section class="rooms-section">
+            <button id="exportarPDF" class="btn exportar">
+            <i class="fa-solid fa-file-pdf"></i> Exportar PDF</button>
+            <h2>Salas Reservadas</h2>
+            <div id="salasReservadas" class="rooms-grid"></div>
+          </section>
+      
+
+  <div id="reservaModal" class="reserva-modal">
+    <div class="reserva-box">
+      <button class="close-reserva">&times;</button>
+      <h2>Reservar Sala</h2>
+      <form id="reservaForm">
+        <div class="form-group">
+          <div class="form-group">
+            <label for="solicitante">Nome do Solicitante</label>
+            
+            <input type="text" id="solicitante" placeholder="Seu nome completo" required>
+          </div>
+          <label for="dataReserva">Selecione a data da reserva</label>
+          <input type="date" id="dataReserva" required>
+        </div>
+        <div class="form-group">
+          <label for="horarioReserva">Selecione o horário</label>
+          <select id="horarioReserva" required>
+            <option value="">Escolha um horário</option>
+            <option value="08:00 - 10:00">08:00 - 10:00</option>
+            <option value="10:00 - 12:00">10:00 - 12:00</option>
+            <option value="13:00 - 15:00">13:00 - 15:00</option>
+            <option value="15:00 - 17:00">15:00 - 17:00</option>
+            <option value="17:00 - 19:00">17:00 - 19:00</option>
+            <option value="19:00 - 21:00">19:00 - 21:00</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-reservar-confirmar">Confirmar Reserva</button>
+      </form>
+    </div>
+  </div>
+
+<div id="editarModal" class="reserva-modal">
+  <div class="reserva-box">
+    <button class="close-reserva" id="closeEditar">&times;</button>
+    <h2>Editar Sala</h2>
+
+    <form id="formEditar">
+      <input type="hidden" id="editSalaID">
+
+      <div class="form-group">
+        <label>Número da Sala</label>
+        <input type="number" id="editNumero" required>
+      </div>
+
+      <div class="form-group">
+        <label>Andar</label>
+        <input type="number" id="editAndar" required>
+      </div>
+
+      <div class="form-group">
+        <label>Bloco</label>
+        <input type="text" id="editBloco" required>
+      </div>
+
+      <div class="form-group">
+        <label>Capacidade</label>
+        <input type="number" id="editCapacidade" required>
+      </div>
+
+      <button class="btn-reservar-confirmar" type="submit">
+        Salvar Alterações
+      </button>
+    </form>
+
+  </div>
+</div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
