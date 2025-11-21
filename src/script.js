@@ -101,93 +101,130 @@ async function carregarProximasReservas() {
 }
 
 function renderSalas(containerId, statusFilter) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    container.innerHTML = "";
-    
-    // Filtra as salas. O status é definido pelo backend: 'Reservada' ou 'Disponível'
-    const filteredSalas = salas.filter((sala) => (sala.status || 'Disponível') === statusFilter); 
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+  
+  // Filtra as salas. O status é definido pelo backend: 'Reservada' ou 'Disponível'
+  const filteredSalas = salas.filter((sala) => (sala.status || 'Disponível') === statusFilter); 
 
-    if (!filteredSalas || filteredSalas.length === 0) {
-        // ... (Mensagens de "Nenhuma sala disponível/reservada")
-        container.innerHTML = `<p class="no-rooms">Nenhuma sala ${statusFilter === 'Disponível' ? 'disponível' : 'reservada'} no momento.</p>`;
-        return;
-    }
+  if (!filteredSalas || filteredSalas.length === 0) {
+      // ... (Mensagens de "Nenhuma sala disponível/reservada")
+      container.innerHTML = `<p class="no-rooms">Nenhuma sala ${statusFilter === 'Disponível' ? 'disponível' : 'reservada'} no momento.</p>`;
+      return;
+  }
 
-    filteredSalas.forEach((sala) => {
-        const card = document.createElement("div");
-        card.classList.add("room-card");
-        
-        const isReserved = sala.status === "Reservada";
-        
-        // --- HTML dos Botões de Ação ---
-        let actionButtonsHTML = '';
-        
-        if (isReserved) {
-            // Botão para Cancelar Reserva (para salas no container 'Salas Reservadas')
-            // O ID da reserva (sala.reservaID) é CRÍTICO para esta ação
-            actionButtonsHTML = `
-                <button class="btn small btn-cancelar-reserva" data-reserva-id="${sala.reservaID || ''}">
-                    Cancelar Reserva
-                </button>
-            `;
-        } else {
-            // Botão/Ícone para Excluir Sala (para salas no container 'Salas Disponíveis')
-            // Requer a biblioteca Font Awesome linkada no salas.html
-            actionButtonsHTML = `
-                <button class="btn-excluir" title="Excluir Sala" data-sala-id="${sala.id}">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            `;
-        }
+  filteredSalas.forEach((sala) => {
+      const card = document.createElement("div");
+      card.classList.add("room-card");
+      
+      const isReserved = sala.status === "Reservada";
+      
+      // --- HTML dos Botões de Ação ---
+      let actionButtonsHTML = '';
+      
+      if (isReserved) {
+          // Botão para Cancelar Reserva (para salas no container 'Salas Reservadas')
+          // O ID da reserva (sala.reservaID) é CRÍTICO para esta ação
+          actionButtonsHTML = `
+              <button class="btn small btn-cancelar-reserva" data-reserva-id="${sala.reservaID || ''}">
+                  Cancelar Reserva
+              </button>
+          `;
+      } else {
+          // Botão/Ícone para Edição e Exclusão (para salas no container 'Salas Disponíveis')
+          actionButtonsHTML = `
+              <button class="btn-editar" title="Editar Sala" data-sala-id="${sala.id}">
+                  <i class="fas fa-pencil-alt"></i>
+              </button>
+              <button class="btn-excluir" title="Excluir Sala" data-sala-id="${sala.id}">
+                  <i class="fas fa-trash-alt"></i>
+              </button>
+          `;
+      }
 
-        // --- Montagem do Card ---
-        card.innerHTML = `
-            <div class="card-header">
-                SALA ${sala.numero} - Bloco ${sala.bloco || 'A'}
-                
-                ${!isReserved ? actionButtonsHTML : ''} </div>
-            <p><strong>Andar:</strong> ${sala.andar}º</p>
-            <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
-            <p><strong>Período:</strong> ${sala.periodo || 'Indefinido'}</p>
-            
-            ${isReserved ? actionButtonsHTML : ''} <button class="btn small ${isReserved ? "ghost btn-detalhes" : "btn-reservar"}" 
-                    data-sala-id="${sala.id}" 
-                    data-reserva-id="${sala.reservaID || ''}" 
-                    data-is-reserved="${isReserved}">
-                ${isReserved ? "Ver mais" : "Reservar"}
-            </button>
-            
-        `;
-        container.appendChild(card);
-    });
-    
-    // 2. Adiciona Listeners para Reservar (Se já não estiver)
-    container.querySelectorAll(".btn-reservar").forEach((btn) => {
-        btn.addEventListener("click", function () {
-            abrirModalReserva(this.dataset.salaId);
-        });
-    });
+      // --- Montagem do Card ---
+      card.innerHTML = `
+          <div class="card-header">
+              SALA ${sala.numero} - Bloco ${sala.bloco || 'A'}
+              
+              ${!isReserved ? actionButtonsHTML : ''} </div>
+          <p><strong>Andar:</strong> ${sala.andar}º</p>
+          <p><strong>Capacidade:</strong> ${sala.capacidade} Alunos</p>
+          <p><strong>Período:</strong> ${sala.periodo || 'Indefinido'}</p>
+          
+          ${isReserved ? actionButtonsHTML : ''} <button class="btn small ${isReserved ? "ghost btn-detalhes" : "btn-reservar"}" 
+                  data-sala-id="${sala.id}" 
+                  data-reserva-id="${sala.reservaID || ''}" 
+                  data-is-reserved="${isReserved}">
+              ${isReserved ? "Ver mais" : "Reservar"}
+          </button>
+          
+      `;
+      container.appendChild(card);
+  });
+  
+  // 2. Adiciona Listeners para Reservar (Se já não estiver)
+  container.querySelectorAll(".btn-reservar").forEach((btn) => {
+      btn.addEventListener("click", function () {
+          abrirModalReserva(this.dataset.salaId);
+      });
+  });
 
-    // 3. Adiciona Listener para Excluir Sala
-    container.querySelectorAll(".btn-excluir").forEach((btn) => {
-        btn.addEventListener("click", function () {
-            const salaId = this.dataset.salaId;
-            if (confirm(`Tem certeza que deseja EXCLUIR permanentemente a Sala ID ${salaId}?`)) {
-                excluirSala(salaId);
-            }
-        });
-    });
+  // 3. Adiciona Listener para Excluir Sala
+  container.querySelectorAll(".btn-excluir").forEach((btn) => {
+      btn.addEventListener("click", function () {
+          const salaId = this.dataset.salaId;
+          if (confirm(`Tem certeza que deseja EXCLUIR permanentemente a Sala ID ${salaId}?`)) {
+              excluirSala(salaId);
+          }
+      });
+  });
 
-    // 4. Adiciona Listener para Cancelar Reserva
-    container.querySelectorAll(".btn-cancelar-reserva").forEach((btn) => {
-        btn.addEventListener("click", function () {
-            const reservaId = this.dataset.reservaId;
-            if (confirm(`Tem certeza que deseja CANCELAR a reserva ID ${reservaId}? A sala voltará a ser DISPONÍVEL.`)) {
-                cancelarReserva(reservaId);
-            }
-        });
-    });
+  // 4. Adiciona Listener para Cancelar Reserva
+  container.querySelectorAll(".btn-cancelar-reserva").forEach((btn) => {
+      btn.addEventListener("click", function () {
+          const reservaId = this.dataset.reservaId;
+          if (confirm(`Tem certeza que deseja CANCELAR a reserva ID ${reservaId}? A sala voltará a ser DISPONÍVEL.`)) {
+              cancelarReserva(reservaId);
+          }
+      });
+  });
+  
+  // 5. Adiciona Listener para Editar Sala (NOVO)
+  container.querySelectorAll(".btn-editar").forEach((btn) => {
+      btn.addEventListener("click", function () {
+          const salaId = this.dataset.salaId;
+          editarSala(salaId); // Chama a função que você precisa criar
+      });
+  });
+}
+
+function editarSala(salaId) {
+  const sala = salas.find((s) => s.id == salaId);
+  if (!sala) {
+      console.error(`Erro: Sala ID ${salaId} não encontrada para edição.`);
+      return;
+  }
+
+  abrirModalReserva(salaId); 
+
+  if (salaTituloModal) {
+    salaTituloModal.textContent = `EDITAR Sala ${sala.numero} - Bloco ${sala.bloco}`;
+  }
+  
+  const inputNumero = $("#numeroSalaModal"); 
+  const inputAndar = $("#andarSalaModal");
+  const inputCapacidade = $("#capacidadeSalaModal");
+  const inputBloco = $("#blocoSalaModal");
+  
+  if (inputNumero) inputNumero.value = sala.numero;
+  if (inputAndar) inputAndar.value = sala.andar;
+  if (inputCapacidade) inputCapacidade.value = sala.capacidade;
+  if (inputBloco) inputBloco.value = sala.bloco;
+
+  const btnSubmit = $("#reservaForm button[type='submit']");
+  if(btnSubmit) btnSubmit.textContent = "Salvar Alterações";
 }
 
 async function carregarDadosIniciais() {
@@ -443,23 +480,34 @@ async function carregarProximasReservas() {
 }
 
 async function excluirSala(salaId) {
-    try {
-        const response = await fetch(`/api/salas/${salaId}`, {
-            method: 'DELETE',
-        });
+  try {
+      const response = await fetch(`/api/salas/${salaId}`, {
+          method: "DELETE", // Método HTTP correto
+          headers: { "Content-Type": "application/json" }
+      });
 
-        const result = await response.json();
+      let result = {};
+      try {
+          // Tenta ler o JSON de resposta (se o servidor enviou um)
+          result = await response.json(); 
+      } catch (e) {
+          result = {}; // Não quebra se a resposta for vazia
+      }
 
-        if (!response.ok) {
-            throw new Error(result.message || 'Falha ao excluir sala.');
-        }
+      if (!response.ok) {
+          // Lança erro com a mensagem do servidor ou status HTTP
+          throw new Error(result.message || `Erro ao excluir a sala (status ${response.status})`);
+      }
 
-        alert(`✅ Sala ID ${salaId} excluída com sucesso!`);
-        await carregarDadosIniciais(); // Recarrega a lista
-    } catch (error) {
-        console.error("Erro ao excluir sala:", error);
-        alert(`❌ Erro ao excluir sala. Detalhes: ${error.message}`);
-    }
+      alert(`✅ Sala ID ${salaId} excluída com sucesso!`);
+
+      // Recarrega a lista para refletir a mudança no DOM
+      await carregarDadosIniciais(); 
+
+  } catch (error) {
+      console.error("Erro ao excluir sala:", error);
+      alert(`❌ Erro ao excluir sala. Detalhes: ${error.message}`);
+  }
 }
 
 async function cancelarReserva(reservaId) {
