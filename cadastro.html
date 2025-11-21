@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="top-bar">
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Página Inicial</a>
+      <a href="/salas" class="nav-link">Salas</a>
+      <a href="/cadastro" class="nav-link active">Cadastro</a>
+    </nav>
+    <div class="user-actions">
+    </div>
+  </header>
+
+  <main class="content-area">
+    <h2>Cadastro de Nova Sala</h2>
+
+    <form id="formCadastro" class="form-cadastro">
+      <div class="form-group">
+        <label for="numero">Número da Sala</label>
+        <input type="number" id="numero" name="numero" required />
+      </div>
+
+      <div class="form-group">
+        <label for="andar">Andar</label>
+        <input type="number" id="andar" name="andar" required />
+      </div>
+
+      <div class="form-group">
+        <label for="capacidade">Capacidade</label>
+        <input type="number" id="capacidade" name="capacidade" required />
+      </div>
+
+      <div class="form-group">
+        <label for="status">Bloco</label>
+        <input type="number" id="bloco" name="bloco" required />
+      </div>
+
+      <button type="submit" class="btn">Cadastrar Sala</button>
+      <p id="mensagem" class="mensagem"></p>
+    </form>
+  </main>
+
+  <script src="script_salas.js"></script>
+</body>
+</html>
